@@ -1,2 +1,3 @@
 # O nome correto da biblioteca Python para o Supabase
+requests
 supabase
