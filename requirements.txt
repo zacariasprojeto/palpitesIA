@@ -1,4 +1,4 @@
-# O nome correto da biblioteca Python para o Supabase
 supabase
 requests
+
 
