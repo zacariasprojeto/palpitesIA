@@ -1,4 +1,4 @@
 Flask
 gunicorn
 requests
-supabase-py==2.4.0
+supabase==2.4.0
