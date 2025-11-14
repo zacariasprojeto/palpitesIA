@@ -1,7 +1,73 @@
 services:
+  # -----------------------------------------
+  # SERVIÇO WEB (Flask) — Porta padrão 10000
+  # -----------------------------------------
   - type: web
-    name: seu-app
-    runtime: python
+    name: lanzaca-web
+    env: python
+    plan: starter
+    region: oregon
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn app:app"
-    pythonVersion: 3.11
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: ODDS_API_KEY
+        sync: false
+      - key: FOOTBALL_DATA_KEY
+        sync: false
+      - key: API_SPORTS_KEY
+        sync: false
+
+  # ----------------------------------------------------
+  # WORKER PARA RODAR SUA IA (ia_completa.py) AUTOMÁTICO
+  # ----------------------------------------------------
+  - type: worker
+    name: lanzaca-ia
+    env: python
+    plan: starter
+    region: oregon
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python ia_completa.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: ODDS_API_KEY
+        sync: false
+      - key: FOOTBALL_DATA_KEY
+        sync: false
+      - key: API_SPORTS_KEY
+        sync: false
+
+jobs:
+  # -----------------------------------------------------
+  # CRON JOB QUE EXECUTA A IA A CADA 5 MINUTOS AUTOMÁTICO
+  # -----------------------------------------------------
+  - name: atualizar-ia
+    type: cron
+    schedule: "*/5 * * * *"
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python ia_completa.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: ODDS_API_KEY
+        sync: false
+      - key: FOOTBALL_DATA_KEY
+        sync: false
+      - key: API_SPORTS_KEY
+        sync: false
+
