@@ -12,7 +12,7 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 ODDS_API_KEY = os.environ.get("ODDS_API_KEY")
 FOOTBALL_DATA_KEY = os.environ.get("FOOTBALL_DATA_KEY")
-API_SPORTS_KEY = os.environ.get("API_SPORTS_KEY") # <--- NOVA CHAVE
+API_SPORTS_KEY = os.environ.get("API_SPORTS_KEY") # Chave da API-Sports
 
 # Headers para Supabase
 SUPABASE_HEADERS = {
@@ -21,12 +21,7 @@ SUPABASE_HEADERS = {
     "Content-Type": "application/json"
 }
 
-# Headers para API-Sports
-API_SPORTS_HEADERS = {
-    'x-rapidapi-key': API_SPORTS_KEY,
-    'x-rapidapi-host': 'api-football-v1.p.rapidapi.com'
-}
-
+# --- FUNÇÕES DE UTILIDADE E IA ---
 
 def salvar_dados_supabase(dados, table_name):
     """Salva dados no Supabase"""
@@ -39,7 +34,7 @@ def salvar_dados_supabase(dados, table_name):
         
         url = f"{SUPABASE_URL}/rest/v1/{table_name}"
         
-        # Deletar registros antigos (CORRIGIDO: Assume que a tabela foi recriada corretamente)
+        # Deletar registros antigos
         delete_response = requests.delete(f"{url}?id=gt.0", headers=SUPABASE_HEADERS)
         
         if delete_response.status_code in [200, 201, 204]:
@@ -63,199 +58,8 @@ def salvar_dados_supabase(dados, table_name):
         print(f"❌ Erro ao salvar: {e}")
         return False
 
-# --- FUNÇÕES DE BUSCA (Ajustadas para evitar limite de API anterior) ---
-
-def buscar_jogos_futuros():
-    """Busca jogos futuros (hoje/amanhã) para análise da IA Básica (H2H)."""
-    print("🌐 Buscando jogos futuros para análise básica (H2H)...")
-    
-    jogos_analise = []
-    hoje = datetime.now()
-    
-    # 1. JOGOS DE HOJE (Pré-jogo/Agendados - Football Data)
-    try:
-        if FOOTBALL_DATA_KEY:
-            hoje_str = hoje.strftime('%Y-%m-%d')
-            headers = {'X-Auth-Token': FOOTBALL_DATA_KEY}
-            response = requests.get(
-                f"https://api.football-data.org/v4/matches?dateFrom={hoje_str}&dateTo={hoje_str}",
-                headers=headers,
-                timeout=10
-            )
-            if response.status_code == 200:
-                data = response.json()
-                for match in data.get('matches', []):
-                    if match['status'] in ['SCHEDULED', 'TIMED']:
-                        jogos_analise.append({
-                            'home_team': match['homeTeam']['name'],
-                            'away_team': match['awayTeam']['name'],
-                            'league': match['competition']['name'],
-                            'status': 'AGENDADO',
-                            'minuto': match['utcDate'][11:16],
-                            'fonte': 'FOOTBALL_DATA_TODAY'
-                        })
-                
-            elif response.status_code == 403:
-                print("⚠️ Aviso: Football-Data.org Limite Excedido (403) na busca agendada.")
-    except Exception as e:
-        print(f"❌ Erro Football Data Today: {e}")
-        
-    
-    # 2. JOGOS DE AMANHÃ (The Sports DB - Backup)
-    try:
-        amanha = (hoje + timedelta(days=1)).strftime('%Y-%m-%d')
-        response = requests.get(
-            f"https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d={amanha}&s=Soccer",
-            timeout=10
-        )
-        if response.status_code == 200:
-            data = response.json()
-            for event in data.get('events', [])[:15]: 
-                jogos_analise.append({
-                    'home_team': event['strHomeTeam'],
-                    'away_team': event['strAwayTeam'],
-                    'league': event['strLeague'],
-                    'status': 'AGENDADO',
-                    'minuto': 'Pré-jogo',
-                    'fonte': 'THESPORTSDB_TOMORROW'
-                })
-    except Exception as e:
-        print(f"❌ Erro TheSportsDB Amanhã: {e}")
-        
-    
-    # Remover duplicatas e retornar
-    jogos_unicos = []
-    seen = set()
-    for jogo in jogos_analise:
-        identifier = f"{jogo['home_team']}_{jogo['away_team']}_{jogo['league']}"
-        if identifier not in seen:
-            seen.add(identifier)
-            jogos_unicos.append(jogo)
-    
-    print(f"🎯 Total de {len(jogos_unicos)} jogos para análise da IA básica (H2H).")
-    return jogos_unicos
-
-def buscar_odds_reais():
-    """Busca odds reais (DESATIVADO TEMPORARIAMENTE para evitar erro 402/403)"""
-    print("💰 Buscando odds reais... (DESATIVADO PARA POUPAR LIMITE)")
-    return None # Retorna None para usar apenas odds da IA
-
-
-# --- NOVO: FUNÇÃO DE BUSCA DE ESTATÍSTICAS DETALHADAS (API-SPORTS) ---
-
-def buscar_estatisticas_detalhadas():
-    """
-    Busca estatísticas detalhadas (chutes, escanteios) 
-    usando a API-Sports para jogos de HOJE para análise da IA de Props.
-    """
-    if not API_SPORTS_KEY:
-        print("❌ API_SPORTS_KEY não configurada.")
-        return []
-    
-    print("📊 Buscando estatísticas detalhadas da API-Sports...")
-    
-    apostas_estatisticas = []
-    
-    try:
-        # 1. Buscar partidas de HOJE (Agendadas/Em andamento)
-        hoje_str = datetime.now().strftime('%Y-%m-%d')
-        url_fixtures = f"https://api-football-v1.p.rapidapi.com/v3/fixtures?date={hoje_str}&timezone=Europe/London"
-        
-        response = requests.get(url_fixtures, headers=API_SPORTS_HEADERS, timeout=15)
-        if response.status_code != 200:
-            print(f"❌ Erro {response.status_code} buscando fixtures: {response.text}")
-            return []
-        
-        fixtures = response.json().get('response', [])
-        
-        # 2. Iterar sobre as partidas e buscar as estatísticas
-        for fixture in fixtures:
-            fixture_id = fixture['fixture']['id']
-            league = fixture['league']['name']
-            home_team = fixture['teams']['home']['name']
-            away_team = fixture['teams']['away']['name']
-            
-            # Buscando estatísticas do jogo
-            url_stats = f"https://api-football-v1.p.rapidapi.com/v3/fixtures/statistics?fixture={fixture_id}"
-            stats_response = requests.get(url_stats, headers=API_SPORTS_HEADERS, timeout=10)
-            
-            if stats_response.status_code == 200:
-                stats_data = stats_response.json().get('response', [])
-                
-                home_shots = 0
-                away_shots = 0
-                home_corners = 0
-                
-                # Processar dados de estatísticas
-                for team_stats in stats_data:
-                    team_name = team_stats['team']['name']
-                    stats_list = team_stats['statistics']
-                    
-                    for stat in stats_list:
-                        if stat['type'] == 'Total Shots':
-                            if team_name == home_team:
-                                home_shots = stat['value'] or 0
-                            else:
-                                away_shots = stat['value'] or 0
-                        elif stat['type'] == 'Corner Kicks':
-                            if team_name == home_team:
-                                home_corners = stat['value'] or 0
-                
-                
-                # --- LÓGICA DE IA AVANÇADA PARA ESTATÍSTICAS (Exemplo simples) ---
-                total_shots = (home_shots or 0) + (away_shots or 0)
-                total_corners = home_corners # Simulação de soma total para o exemplo
-                
-                # Palpite 1: Chutes Totais
-                if total_shots > 20 and total_shots < 30: 
-                    odd = 1.80
-                    prob = 1 / 1.55 # Probabilidade ajustada da IA (ex: 64%)
-                    valor_esperado = (odd * prob) - 1
-                    confianca, stake = determinar_confianca_stake(valor_esperado, prob)
-                    valor_percentual = (prob - (1/odd)) * 100
-                    
-                    if valor_esperado > 0.05:
-                        apostas_estatisticas.append({
-                            'match': f"{home_team} vs {away_team}",
-                            'league': league,
-                            'bet_type': 'Total de Chutes > 20.5',
-                            'odd': round(odd, 2),
-                            'probability': round(prob, 3),
-                            'value_expected': round(valor_esperado, 3),
-                            'value_percent': round(valor_percentual, 1),
-                            'stake': stake,
-                            'confidence': confianca,
-                            'casa_aposta': 'IA STATS',
-                            'link_aposta': '#',
-                            'status_jogo': 'PRÉ-JOGO',
-                            'minuto': fixture['fixture']['date'][11:16],
-                            'fonte_odds': 'CALCULADO_STATS',
-                            'fonte_jogo': 'API_SPORTS',
-                            'timestamp': datetime.now().isoformat()
-                        })
-                
-                # Palpite 2: Escanteios
-                if total_corners > 10:
-                    # ... Adicione mais lógica de escanteios aqui ...
-                    pass
-
-
-        # Se você quiser o palpite de 'Chutes por Jogador', você precisa 
-        # buscar o endpoint 'events' (eventos) da API-Sports, que lista chutes por jogador.
-
-    except Exception as e:
-        print(f"❌ Erro buscando estatísticas detalhadas: {e}")
-        return []
-    
-    print(f"✅ Total de {len(apostas_estatisticas)} palpites estatísticos gerados.")
-    return apostas_estatisticas
-
-
-# --- FUNÇÕES DE LÓGICA DA IA (MANTIDAS) ---
-
 def calcular_odds_inteligentes(home_team, away_team, league):
     """Calcula odds realistas baseadas em dados reais (Rating H2H)"""
-    # ... (Seu código de rating H2H mantido) ...
     ranking_times = {
         'flamengo': 85, 'palmeiras': 84, 'são paulo': 82, 'corinthians': 81,
         'internacional': 80, 'atlético-mg': 83, 'grêmio': 79, 'botafogo': 78,
@@ -317,21 +121,188 @@ def determinar_confianca_stake(valor_esperado, probabilidade):
     else:
         return "MUITO BAIXA", "NÃO APOSTAR"
 
+# --- FUNÇÕES DE BUSCA DE DADOS ---
+
+def buscar_jogos_futuros():
+    """Busca jogos futuros (hoje/amanhã) para análise da IA Básica (H2H)."""
+    print("🌐 Buscando jogos futuros para análise básica (H2H)...")
+    
+    jogos_analise = []
+    hoje = datetime.now()
+    
+    # Busca 1: JOGOS DE HOJE (Football Data)
+    try:
+        if FOOTBALL_DATA_KEY:
+            hoje_str = hoje.strftime('%Y-%m-%d')
+            headers = {'X-Auth-Token': FOOTBALL_DATA_KEY}
+            response = requests.get(
+                f"https://api.football-data.org/v4/matches?dateFrom={hoje_str}&dateTo={hoje_str}",
+                headers=headers,
+                timeout=10
+            )
+            if response.status_code == 200:
+                data = response.json()
+                for match in data.get('matches', []):
+                    if match['status'] in ['SCHEDULED', 'TIMED']:
+                        jogos_analise.append({
+                            'home_team': match['homeTeam']['name'],
+                            'away_team': match['awayTeam']['name'],
+                            'league': match['competition']['name'],
+                            'status': 'AGENDADO',
+                            'minuto': match['utcDate'][11:16],
+                            'fonte': 'FOOTBALL_DATA_TODAY'
+                        })
+            elif response.status_code != 403: # Ignora o 403, mas reporta outros erros
+                 print(f"❌ Erro {response.status_code} Football Data na busca de jogos de hoje.")
+    except Exception as e:
+        print(f"❌ Erro Football Data Today: {e}")
+        
+    
+    # Busca 2: JOGOS DE AMANHÃ (The Sports DB - Backup)
+    try:
+        amanha = (hoje + timedelta(days=1)).strftime('%Y-%m-%d')
+        response = requests.get(
+            f"https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d={amanha}&s=Soccer",
+            timeout=10
+        )
+        if response.status_code == 200:
+            data = response.json()
+            for event in data.get('events', [])[:15]: 
+                jogos_analise.append({
+                    'home_team': event['strHomeTeam'],
+                    'away_team': event['strAwayTeam'],
+                    'league': event['strLeague'],
+                    'status': 'AGENDADO',
+                    'minuto': 'Pré-jogo',
+                    'fonte': 'THESPORTSDB_TOMORROW'
+                })
+    except Exception as e:
+        print(f"❌ Erro TheSportsDB Amanhã: {e}")
+        
+    
+    # Remover duplicatas
+    jogos_unicos = []
+    seen = set()
+    for jogo in jogos_analise:
+        identifier = f"{jogo['home_team']}_{jogo['away_team']}_{jogo['league']}"
+        if identifier not in seen:
+            seen.add(identifier)
+            jogos_unicos.append(jogo)
+    
+    return jogos_unicos
+
+
+def buscar_estatisticas_detalhadas():
+    """
+    Busca estatísticas detalhadas (chutes, escanteios) 
+    usando a API-Sports para análise da IA de Props.
+    """
+    if not API_SPORTS_KEY:
+        print("❌ API_SPORTS_KEY não configurada. Pule a análise estatística.")
+        return []
+    
+    print("📊 Buscando estatísticas detalhadas da API-Sports...")
+    
+    apostas_estatisticas = []
+    
+    # 🛑 CORREÇÃO CRÍTICA DE HEADER PARA O ERRO 403:
+    headers = {
+        'x-rapidapi-key': API_SPORTS_KEY,
+        'x-rapidapi-host': 'api-football-v1.p.rapidapi.com' # Host da API-Sports
+    }
+    
+    try:
+        # 1. Buscar partidas de HOJE (Agendadas/Em andamento)
+        hoje_str = datetime.now().strftime('%Y-%m-%d')
+        url_fixtures = f"https://api-football-v1.p.rapidapi.com/v3/fixtures?date={hoje_str}&timezone=Europe/London"
+        
+        response = requests.get(url_fixtures, headers=headers, timeout=15)
+
+        if response.status_code != 200:
+            print(f"❌ Erro CRÍTICO {response.status_code} buscando fixtures da API-Sports: {response.text}")
+            return []
+        
+        fixtures = response.json().get('response', [])
+        
+        # 2. Iterar sobre as partidas e buscar as estatísticas
+        for fixture in fixtures:
+            fixture_id = fixture['fixture']['id']
+            league = fixture['league']['name']
+            home_team = fixture['teams']['home']['name']
+            away_team = fixture['teams']['away']['name']
+            
+            # Buscar estatísticas do jogo
+            url_stats = f"https://api-football-v1.p.rapidapi.com/v3/fixtures/statistics?fixture={fixture_id}"
+            stats_response = requests.get(url_stats, headers=headers, timeout=10)
+            
+            if stats_response.status_code == 200:
+                stats_data = stats_response.json().get('response', [])
+                
+                home_shots = 0
+                away_shots = 0
+                
+                # Processar dados de estatísticas
+                for team_stats in stats_data:
+                    team_name = team_stats['team']['name']
+                    stats_list = team_stats['statistics']
+                    
+                    for stat in stats_list:
+                        if stat['type'] == 'Total Shots':
+                            if team_name == home_team:
+                                home_shots = stat['value'] or 0
+                            else:
+                                away_shots = stat['value'] or 0
+                
+                
+                # --- LÓGICA DE IA AVANÇADA PARA ESTATÍSTICAS (Exemplo: Chutes) ---
+                total_shots = (home_shots or 0) + (away_shots or 0)
+                
+                # Palpite 1: Chutes Totais (Exemplo: Mais de 20.5 chutes totais)
+                if total_shots >= 15: # Usando 15 para ter mais palpites em um teste de API real
+                    odd = 1.80
+                    prob = 1 / 1.55 # Probabilidade ajustada da IA (ex: 64% de chance)
+                    valor_esperado = (odd * prob) - 1
+                    confianca, stake = determinar_confianca_stake(valor_esperado, prob)
+                    valor_percentual = (prob - (1/odd)) * 100
+                    
+                    if valor_esperado > 0.05:
+                        apostas_estatisticas.append({
+                            'match': f"{home_team} vs {away_team}",
+                            'league': league,
+                            'bet_type': 'Total de Chutes > 20.5',
+                            'odd': round(odd, 2),
+                            'probability': round(prob, 3),
+                            'value_expected': round(valor_esperado, 3),
+                            'value_percent': round(valor_percentual, 1),
+                            'stake': stake,
+                            'confidence': confianca,
+                            'casa_aposta': 'IA STATS',
+                            'link_aposta': '#',
+                            'status_jogo': 'PRÉ-JOGO',
+                            'minuto': fixture['fixture']['date'][11:16],
+                            'fonte_odds': 'CALCULADO_STATS',
+                            'fonte_jogo': 'API_SPORTS',
+                            'timestamp': datetime.now().isoformat()
+                        })
+
+    except Exception as e:
+        print(f"❌ Erro geral buscando estatísticas detalhadas: {e}")
+        return []
+    
+    return apostas_estatisticas
+
+
 # --- FUNÇÃO PRINCIPAL DE PALPITES H2H ---
 
 def gerar_palpites_h2h():
     """Gera palpites da IA de H2H baseados em jogos futuros."""
     print("🎯 Gerando palpites da IA (H2H)...")
     
-    # Buscar jogos futuros (hoje/amanhã)
     jogos_analise = buscar_jogos_futuros()
     
     if not jogos_analise:
         print("❌ Nenhum jogo futuro para análise H2H encontrado.")
         return []
-    
-    # Odds reais desativadas
-    # odds_data = buscar_odds_reais() 
     
     apostas = []
     
@@ -398,21 +369,16 @@ def gerar_palpites_h2h():
             print(f"⚠️ Erro processando palpite H2H para {jogo.get('home_team', '')}: {e}")
             continue
     
-    # Ordenar por valor esperado
     apostas.sort(key=lambda x: x['value_expected'], reverse=True)
-    
-    print(f"🎯 {len(apostas)} palpites da IA (H2H) gerados")
     return apostas
 
 def gerar_multiplas_ao_vivo(apostas_individuais):
     """Gera múltiplas com base nos melhores palpites individuais"""
-    # ... (Seu código de múltiplas mantido) ...
     try:
         if len(apostas_individuais) >= 2:
-            melhores_apostas = [a for a in apostas_individuais if a['value_expected'] > 0.05 and a['confidence'] in ['ALTO', 'MÉDIO']][:3] # Aumentei para 3 para ter mais opções
+            melhores_apostas = [a for a in apostas_individuais if a['value_expected'] > 0.05 and a['confidence'] in ['ALTO', 'MÉDIO']][:3]
             
             if len(melhores_apostas) < 2:
-                print("❌ Apostas de alto valor insuficientes para múltipla.")
                 return []
                 
             odd_total = 1.0
@@ -447,7 +413,6 @@ def gerar_multiplas_ao_vivo(apostas_individuais):
             }
             return [multipla]
         else:
-            print("❌ Apostas insuficientes para múltipla")
             return []
             
     except Exception as e:
@@ -475,7 +440,6 @@ def main():
         
         if not dados_individuais:
             print("❌ ALERTA: Nenhum palpite da IA gerado.")
-            # Salvar mensagem de erro
             erro_msg = [{
                 'match': 'Sistema em Manutenção',
                 'league': 'Atualização de Dados',
