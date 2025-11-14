@@ -1,0 +1,98 @@
+/* Novos Estilos para as Seções */
+
+/* Seção Top do Dia */
+.featured-section {
+    margin-bottom: 30px;
+}
+
+/* Seção Apostas Seguras */
+.safe-section {
+    margin-bottom: 30px;
+}
+
+.safe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 15px;
+}
+
+.safe-bet {
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 170, 255, 0.1));
+    border: 2px solid var(--primary);
+}
+
+.safe-bet::before {
+    background: var(--primary);
+}
+
+.safe-badge {
+    background: var(--primary);
+    color: var(--dark);
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.7em;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+/* Seção Top Bets */
+.top-bet {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 170, 0, 0.1));
+    border: 2px solid var(--accent);
+}
+
+.top-bet::before {
+    background: var(--accent);
+}
+
+.top-badge {
+    background: var(--accent);
+    color: var(--light);
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.7em;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+/* Badges de Gênero Compactos */
+.gender-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.7em;
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+.gender-M {
+    background: #00aaff;
+    color: white;
+}
+
+.gender-F {
+    background: #ff66cc;
+    color: white;
+}
+
+/* Data do Jogo */
+.match-date {
+    color: var(--gray-light);
+    font-size: 0.8em;
+    margin-top: 2px;
+}
+
+/* Grids Responsivos */
+.featured-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.multiples-grid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+}
+
+/* Status Items Adicionais */
+.status-item.highlight {
+    background: rgba(0, 255, 136, 0.2);
+    border-color: var(--primary);
+}
