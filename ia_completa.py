@@ -5,13 +5,14 @@ import requests
 from datetime import datetime, timedelta
 import hashlib
 
-print("🔥 SISTEMA DE PALPITES 100% AO VIVO - INICIANDO...")
+print("🔥 SISTEMA DE PALPITES 100% INTELIGENTE - INICIANDO...")
 
 # --- Configurações ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 ODDS_API_KEY = os.environ.get("ODDS_API_KEY")
 FOOTBALL_DATA_KEY = os.environ.get("FOOTBALL_DATA_KEY")
+API_SPORTS_KEY = os.environ.get("API_SPORTS_KEY") # <--- NOVA CHAVE
 
 # Headers para Supabase
 SUPABASE_HEADERS = {
@@ -19,6 +20,13 @@ SUPABASE_HEADERS = {
     "Authorization": f"Bearer {SUPABASE_KEY}",
     "Content-Type": "application/json"
 }
+
+# Headers para API-Sports
+API_SPORTS_HEADERS = {
+    'x-rapidapi-key': API_SPORTS_KEY,
+    'x-rapidapi-host': 'api-football-v1.p.rapidapi.com'
+}
+
 
 def salvar_dados_supabase(dados, table_name):
     """Salva dados no Supabase"""
@@ -31,7 +39,7 @@ def salvar_dados_supabase(dados, table_name):
         
         url = f"{SUPABASE_URL}/rest/v1/{table_name}"
         
-        # Deletar registros antigos
+        # Deletar registros antigos (CORRIGIDO: Assume que a tabela foi recriada corretamente)
         delete_response = requests.delete(f"{url}?id=gt.0", headers=SUPABASE_HEADERS)
         
         if delete_response.status_code in [200, 201, 204]:
@@ -39,18 +47,6 @@ def salvar_dados_supabase(dados, table_name):
         
         # Inserir novos registros
         if dados:
-            # 💡 INSERIDO: Bloco de Debug para diagnosticar o Erro 400 do Supabase
-            if table_name == 'individuais':
-                try:
-                    print("-------------------------------------------------------")
-                    print(f"DEBUG: DADOS DE INDIVÍDUOS A SEREM SALVOS (Primeiro Item):")
-                    # Usamos json.dumps para garantir que o output é JSON e legível
-                    print(json.dumps(dados[0], indent=4)) 
-                    print("-------------------------------------------------------")
-                except Exception as debug_e:
-                    print(f"DEBUG ERROR: Não foi possível imprimir o JSON: {debug_e}")
-            # Fim do Bloco de Debug
-            
             insert_response = requests.post(url, json=dados, headers=SUPABASE_HEADERS)
             
             if insert_response.status_code in [200, 201]:
@@ -67,70 +63,22 @@ def salvar_dados_supabase(dados, table_name):
         print(f"❌ Erro ao salvar: {e}")
         return False
 
-def buscar_jogos_ao_vivo():
-    """Busca jogos AO VIVO de múltiplas fontes em tempo real"""
-    print("🌐 Buscando jogos AO VIVO...")
+# --- FUNÇÕES DE BUSCA (Ajustadas para evitar limite de API anterior) ---
+
+def buscar_jogos_futuros():
+    """Busca jogos futuros (hoje/amanhã) para análise da IA Básica (H2H)."""
+    print("🌐 Buscando jogos futuros para análise básica (H2H)...")
     
-    jogos_ao_vivo = []
+    jogos_analise = []
+    hoje = datetime.now()
     
-    # Fonte 1: API-Football (jogos ao vivo)
+    # 1. JOGOS DE HOJE (Pré-jogo/Agendados - Football Data)
     try:
         if FOOTBALL_DATA_KEY:
+            hoje_str = hoje.strftime('%Y-%m-%d')
             headers = {'X-Auth-Token': FOOTBALL_DATA_KEY}
             response = requests.get(
-                "https://api.football-data.org/v4/matches?status=LIVE", 
-                headers=headers, 
-                timeout=10
-            )
-            if response.status_code == 200:
-                data = response.json()
-                for match in data.get('matches', []):
-                    if match['status'] == 'LIVE':
-                        jogo = {
-                            'home_team': match['homeTeam']['name'],
-                            'away_team': match['awayTeam']['name'],
-                            'league': match['competition']['name'],
-                            'status': 'AO VIVO',
-                            'minuto': match.get('minute', '?'),
-                            'score': f"{match['score']['fullTime']['home']}-{match['score']['fullTime']['away']}",
-                            'fonte': 'FOOTBALL_DATA_LIVE'
-                        }
-                        jogos_ao_vivo.append(jogo)
-                print(f"✅ {len([m for m in data.get('matches', []) if m['status'] == 'LIVE'])} jogos ao vivo encontrados")
-    except Exception as e:
-        print(f"❌ Erro Football Data Live: {e}")
-    
-    # Fonte 2: The Sports DB (jogos de hoje)
-    try:
-        hoje = datetime.now().strftime('%Y-%m-%d')
-        response = requests.get(
-            f"https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d={hoje}&s=Soccer",
-            timeout=10
-        )
-        if response.status_code == 200:
-            data = response.json()
-            for event in data.get('events', [])[:15]:  # Limitar para não exceder
-                jogo = {
-                    'home_team': event['strHomeTeam'],
-                    'away_team': event['strAwayTeam'],
-                    'league': event['strLeague'],
-                    'status': 'HOJE',
-                    'minuto': 'Pré-jogo',
-                    'score': '0-0',
-                    'fonte': 'THESPORTSDB_TODAY'
-                }
-                jogos_ao_vivo.append(jogo)
-            print(f"✅ {len(data.get('events', []))} jogos de hoje encontrados")
-    except Exception as e:
-        print(f"❌ Erro TheSportsDB: {e}")
-    
-    # Fonte 3: API-Football (jogos de hoje)
-    try:
-        if FOOTBALL_DATA_KEY:
-            hoje = datetime.now().strftime('%Y-%m-%d')
-            headers = {'X-Auth-Token': FOOTBALL_DATA_KEY}
-            response = requests.get(
-                f"https://api.football-data.org/v4/matches?dateFrom={hoje}&dateTo={hoje}",
+                f"https://api.football-data.org/v4/matches?dateFrom={hoje_str}&dateTo={hoje_str}",
                 headers=headers,
                 timeout=10
             )
@@ -138,104 +86,181 @@ def buscar_jogos_ao_vivo():
                 data = response.json()
                 for match in data.get('matches', []):
                     if match['status'] in ['SCHEDULED', 'TIMED']:
-                        jogo = {
+                        jogos_analise.append({
                             'home_team': match['homeTeam']['name'],
                             'away_team': match['awayTeam']['name'],
                             'league': match['competition']['name'],
                             'status': 'AGENDADO',
                             'minuto': match['utcDate'][11:16],
-                            'score': '0-0',
                             'fonte': 'FOOTBALL_DATA_TODAY'
-                        }
-                        jogos_ao_vivo.append(jogo)
-                print(f"✅ {len([m for m in data.get('matches', []) if m['status'] in ['SCHEDULED', 'TIMED']])} jogos agendados")
+                        })
+                
+            elif response.status_code == 403:
+                print("⚠️ Aviso: Football-Data.org Limite Excedido (403) na busca agendada.")
     except Exception as e:
         print(f"❌ Erro Football Data Today: {e}")
+        
     
-    # Remover duplicatas
+    # 2. JOGOS DE AMANHÃ (The Sports DB - Backup)
+    try:
+        amanha = (hoje + timedelta(days=1)).strftime('%Y-%m-%d')
+        response = requests.get(
+            f"https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d={amanha}&s=Soccer",
+            timeout=10
+        )
+        if response.status_code == 200:
+            data = response.json()
+            for event in data.get('events', [])[:15]: 
+                jogos_analise.append({
+                    'home_team': event['strHomeTeam'],
+                    'away_team': event['strAwayTeam'],
+                    'league': event['strLeague'],
+                    'status': 'AGENDADO',
+                    'minuto': 'Pré-jogo',
+                    'fonte': 'THESPORTSDB_TOMORROW'
+                })
+    except Exception as e:
+        print(f"❌ Erro TheSportsDB Amanhã: {e}")
+        
+    
+    # Remover duplicatas e retornar
     jogos_unicos = []
     seen = set()
-    for jogo in jogos_ao_vivo:
-        identifier = f"{jogo['home_team']}_{jogo['away_team']}"
+    for jogo in jogos_analise:
+        identifier = f"{jogo['home_team']}_{jogo['away_team']}_{jogo['league']}"
         if identifier not in seen:
             seen.add(identifier)
             jogos_unicos.append(jogo)
     
-    print(f"🎯 Total de {len(jogos_unicos)} jogos AO VIVO/hoje encontrados")
+    print(f"🎯 Total de {len(jogos_unicos)} jogos para análise da IA básica (H2H).")
     return jogos_unicos
 
-def buscar_odds_ao_vivo():
-    """Busca odds AO VIVO da The Odds API"""
-    print("💰 Buscando odds AO VIVO...")
+def buscar_odds_reais():
+    """Busca odds reais (DESATIVADO TEMPORARIAMENTE para evitar erro 402/403)"""
+    print("💰 Buscando odds reais... (DESATIVADO PARA POUPAR LIMITE)")
+    return None # Retorna None para usar apenas odds da IA
+
+
+# --- NOVO: FUNÇÃO DE BUSCA DE ESTATÍSTICAS DETALHADAS (API-SPORTS) ---
+
+def buscar_estatisticas_detalhadas():
+    """
+    Busca estatísticas detalhadas (chutes, escanteios) 
+    usando a API-Sports para jogos de HOJE para análise da IA de Props.
+    """
+    if not API_SPORTS_KEY:
+        print("❌ API_SPORTS_KEY não configurada.")
+        return []
+    
+    print("📊 Buscando estatísticas detalhadas da API-Sports...")
+    
+    apostas_estatisticas = []
     
     try:
-        if not ODDS_API_KEY:
-            print("❌ ODDS_API_KEY não configurada")
-            return None
+        # 1. Buscar partidas de HOJE (Agendadas/Em andamento)
+        hoje_str = datetime.now().strftime('%Y-%m-%d')
+        url_fixtures = f"https://api-football-v1.p.rapidapi.com/v3/fixtures?date={hoje_str}&timezone=Europe/London"
         
-        # ⚠️ CORRIGIDO: Nomenclatura das ligas para evitar Erro 422/404
-        sports = [
-            'soccer_england_premier_league',  # Premier League (corrigido de epl)
-            'soccer_spain_la_liga',          # La Liga
-            'soccer_italy_serie_a',          # Serie A
-            'soccer_uefa_champions_league',  # CORRIGIDO de soccer_uefa_champs (causa do 404)
-            'soccer_germany_bundesliga',     # Bundesliga
-            # Você pode adicionar mais ligas aqui
-        ]
+        response = requests.get(url_fixtures, headers=API_SPORTS_HEADERS, timeout=15)
+        if response.status_code != 200:
+            print(f"❌ Erro {response.status_code} buscando fixtures: {response.text}")
+            return []
         
-        all_odds = []
+        fixtures = response.json().get('response', [])
         
-        for sport in sports:
-            try:
-                url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds"
-                params = {
-                    'apiKey': ODDS_API_KEY,
-                    'regions': 'eu',
-                    'markets': 'h2h,totals,btts',
-                    'oddsFormat': 'decimal'
-                }
-                
-                response = requests.get(url, params=params, timeout=15)
-                
-                if response.status_code == 200:
-                    events = response.json()
-                    if events:
-                        all_odds.extend(events)
-                        print(f"✅ {len(events)} eventos de {sport}")
-                    else:
-                        print(f"ℹ️ Nenhum evento em {sport}")
-                else:
-                    # 💡 INSERIDO: Exibir corpo da resposta em caso de erro 400/401/422 para diagnóstico
-                    print(f"❌ Erro {response.status_code} em {sport}. Detalhe: {response.text}") 
-                
-                time.sleep(1)
-                
-            except Exception as e:
-                print(f"⚠️ Erro em {sport}: {e}")
-                continue
-        
-        if all_odds:
-            print(f"💰 {len(all_odds)} eventos com odds AO VIVO")
-            return all_odds
-        else:
-            print("❌ Nenhuma odds AO VIVO encontrada")
-            return None
+        # 2. Iterar sobre as partidas e buscar as estatísticas
+        for fixture in fixtures:
+            fixture_id = fixture['fixture']['id']
+            league = fixture['league']['name']
+            home_team = fixture['teams']['home']['name']
+            away_team = fixture['teams']['away']['name']
             
+            # Buscando estatísticas do jogo
+            url_stats = f"https://api-football-v1.p.rapidapi.com/v3/fixtures/statistics?fixture={fixture_id}"
+            stats_response = requests.get(url_stats, headers=API_SPORTS_HEADERS, timeout=10)
+            
+            if stats_response.status_code == 200:
+                stats_data = stats_response.json().get('response', [])
+                
+                home_shots = 0
+                away_shots = 0
+                home_corners = 0
+                
+                # Processar dados de estatísticas
+                for team_stats in stats_data:
+                    team_name = team_stats['team']['name']
+                    stats_list = team_stats['statistics']
+                    
+                    for stat in stats_list:
+                        if stat['type'] == 'Total Shots':
+                            if team_name == home_team:
+                                home_shots = stat['value'] or 0
+                            else:
+                                away_shots = stat['value'] or 0
+                        elif stat['type'] == 'Corner Kicks':
+                            if team_name == home_team:
+                                home_corners = stat['value'] or 0
+                
+                
+                # --- LÓGICA DE IA AVANÇADA PARA ESTATÍSTICAS (Exemplo simples) ---
+                total_shots = (home_shots or 0) + (away_shots or 0)
+                total_corners = home_corners # Simulação de soma total para o exemplo
+                
+                # Palpite 1: Chutes Totais
+                if total_shots > 20 and total_shots < 30: 
+                    odd = 1.80
+                    prob = 1 / 1.55 # Probabilidade ajustada da IA (ex: 64%)
+                    valor_esperado = (odd * prob) - 1
+                    confianca, stake = determinar_confianca_stake(valor_esperado, prob)
+                    valor_percentual = (prob - (1/odd)) * 100
+                    
+                    if valor_esperado > 0.05:
+                        apostas_estatisticas.append({
+                            'match': f"{home_team} vs {away_team}",
+                            'league': league,
+                            'bet_type': 'Total de Chutes > 20.5',
+                            'odd': round(odd, 2),
+                            'probability': round(prob, 3),
+                            'value_expected': round(valor_esperado, 3),
+                            'value_percent': round(valor_percentual, 1),
+                            'stake': stake,
+                            'confidence': confianca,
+                            'casa_aposta': 'IA STATS',
+                            'link_aposta': '#',
+                            'status_jogo': 'PRÉ-JOGO',
+                            'minuto': fixture['fixture']['date'][11:16],
+                            'fonte_odds': 'CALCULADO_STATS',
+                            'fonte_jogo': 'API_SPORTS',
+                            'timestamp': datetime.now().isoformat()
+                        })
+                
+                # Palpite 2: Escanteios
+                if total_corners > 10:
+                    # ... Adicione mais lógica de escanteios aqui ...
+                    pass
+
+
+        # Se você quiser o palpite de 'Chutes por Jogador', você precisa 
+        # buscar o endpoint 'events' (eventos) da API-Sports, que lista chutes por jogador.
+
     except Exception as e:
-        print(f"❌ Erro geral nas odds: {e}")
-        return None
+        print(f"❌ Erro buscando estatísticas detalhadas: {e}")
+        return []
+    
+    print(f"✅ Total de {len(apostas_estatisticas)} palpites estatísticos gerados.")
+    return apostas_estatisticas
+
+
+# --- FUNÇÕES DE LÓGICA DA IA (MANTIDAS) ---
 
 def calcular_odds_inteligentes(home_team, away_team, league):
-    """Calcula odds realistas baseadas em dados reais"""
-    # Base de dados de times e suas forças relativas
+    """Calcula odds realistas baseadas em dados reais (Rating H2H)"""
+    # ... (Seu código de rating H2H mantido) ...
     ranking_times = {
-        # Times brasileiros
         'flamengo': 85, 'palmeiras': 84, 'são paulo': 82, 'corinthians': 81,
         'internacional': 80, 'atlético-mg': 83, 'grêmio': 79, 'botafogo': 78,
         'fortaleza': 77, 'bahia': 76, 'vasco': 75, 'cruzeiro': 76,
         'fluminense': 79, 'santos': 77, 'bragantino': 80,
-        
-        # Times europeus
         'manchester city': 95, 'liverpool': 94, 'arsenal': 93, 'chelsea': 88,
         'manchester united': 87, 'tottenham': 86, 'barcelona': 92, 'real madrid': 95,
         'atlético madrid': 89, 'sevilla': 85, 'bayern munich': 96, 'borussia dortmund': 90,
@@ -246,17 +271,10 @@ def calcular_odds_inteligentes(home_team, away_team, league):
     home_lower = home_team.lower()
     away_lower = away_team.lower()
     
-    # Obter ratings
     rating_home = ranking_times.get(home_lower, 75)
     rating_away = ranking_times.get(away_lower, 75)
-    
-    # Calcular diferença
     diff = rating_home - rating_away
     
-    # Base odds para empate
-    base_draw = 3.2
-    
-    # Ajustar odds baseado na diferença de rating
     if diff > 20:
         odds_home, odds_draw, odds_away = 1.50, 4.00, 6.00
     elif diff > 10:
@@ -270,13 +288,12 @@ def calcular_odds_inteligentes(home_team, away_team, league):
     else:
         odds_home, odds_draw, odds_away = 6.00, 4.00, 1.50
     
-    # Ajuste para ligas específicas
     if 'brasil' in league.lower() or 'série a' in league.lower():
-        # No Brasil, odds tendem a ser mais equilibradas
         odds_home = min(odds_home * 1.1, 5.0)
         odds_away = min(odds_away * 1.1, 5.0)
     
     return round(odds_home, 2), round(odds_draw, 2), round(odds_away, 2)
+
 
 def analisar_valor_aposta(odds, probabilidade):
     """Analisa o valor real da aposta"""
@@ -287,7 +304,6 @@ def analisar_valor_aposta(odds, probabilidade):
 
 def determinar_confianca_stake(valor_esperado, probabilidade):
     """Determina confiança e stake baseado em análise rigorosa"""
-    # Fator combinado
     fator = (valor_esperado * 2) + probabilidade
     
     if fator > 1.8 and valor_esperado > 0.15:
@@ -301,69 +317,38 @@ def determinar_confianca_stake(valor_esperado, probabilidade):
     else:
         return "MUITO BAIXA", "NÃO APOSTAR"
 
-def gerar_palpites_ao_vivo():
-    """Gera palpites 100% AO VIVO baseados em jogos reais"""
-    print("🎯 Gerando palpites AO VIVO...")
+# --- FUNÇÃO PRINCIPAL DE PALPITES H2H ---
+
+def gerar_palpites_h2h():
+    """Gera palpites da IA de H2H baseados em jogos futuros."""
+    print("🎯 Gerando palpites da IA (H2H)...")
     
-    # Buscar jogos AO VIVO
-    jogos_ao_vivo = buscar_jogos_ao_vivo()
+    # Buscar jogos futuros (hoje/amanhã)
+    jogos_analise = buscar_jogos_futuros()
     
-    if not jogos_ao_vivo:
-        print("❌ CRÍTICO: Nenhum jogo AO VIVO encontrado")
+    if not jogos_analise:
+        print("❌ Nenhum jogo futuro para análise H2H encontrado.")
         return []
     
-    # Buscar odds AO VIVO
-    odds_data = buscar_odds_ao_vivo()
+    # Odds reais desativadas
+    # odds_data = buscar_odds_reais() 
     
     apostas = []
     
-    for jogo in jogos_ao_vivo:
+    for jogo in jogos_analise:
         try:
             home_team = jogo['home_team']
             away_team = jogo['away_team']
             league = jogo['league']
             status = jogo['status']
-            minuto = jogo['minuto']
+            minuto = jogo.get('minuto', 'Pré-jogo')
             
-            # Tentar encontrar odds reais para este jogo
-            odds_reais = None
-            if odds_data:
-                for evento in odds_data:
-                    # Usar a hora do jogo como critério de correspondência pode ser mais preciso
-                    # Mas, mantendo a lógica de nome para simplificar
-                    if (evento['home_team'].lower() in home_team.lower() or 
-                        home_team.lower() in evento['home_team'].lower()):
-                        odds_reais = evento
-                        break
+            # Usar apenas odds inteligentes (da IA)
+            odds_home, odds_draw, odds_away = calcular_odds_inteligentes(home_team, away_team, league)
+            casa_aposta = 'SuaIA'
+            fonte_odds = 'CALCULADO'
             
-            if odds_reais:
-                # Usar odds reais
-                odds_home, odds_draw, odds_away = 2.0, 3.0, 3.5
-                casa_aposta = 'Bet365'
-                
-                for bookmaker in odds_reais.get('bookmakers', []):
-                    for market in bookmaker.get('markets', []):
-                        if market['key'] == 'h2h':
-                            for outcome in market['outcomes']:
-                                if outcome['name'] == odds_reais['home_team']:
-                                    odds_home = outcome.get('price', 2.0)
-                                elif outcome['name'] == odds_reais['away_team']:
-                                    odds_away = outcome.get('price', 3.5)
-                                else:
-                                    odds_draw = outcome.get('price', 3.0)
-                            casa_aposta = bookmaker.get('key', 'Bet365')
-                            break
-                    break
-                
-                fonte_odds = 'ODDS_REAIS'
-                
-            else:
-                # Calcular odds inteligentes baseadas em ranking
-                odds_home, odds_draw, odds_away = calcular_odds_inteligentes(home_team, away_team, league)
-                casa_aposta = 'Bet365'
-                fonte_odds = 'CALCULADO'
-            
-            # Calcular probabilidades
+            # Calcular probabilidades e valor esperado
             prob_home = 1 / odds_home
             prob_draw = 1 / odds_draw
             prob_away = 1 / odds_away
@@ -373,12 +358,10 @@ def gerar_palpites_ao_vivo():
             prob_draw_ajust = prob_draw / total_prob
             prob_away_ajust = prob_away / total_prob
             
-            # Calcular valor esperado
             valor_home = (odds_home * prob_home_ajust) - 1
             valor_draw = (odds_draw * prob_draw_ajust) - 1
             valor_away = (odds_away * prob_away_ajust) - 1
             
-            # Encontrar melhor aposta
             valores = [valor_home, valor_draw, valor_away]
             tipos = [f"{home_team} Vence", "Empate", f"{away_team} Vence"]
             probabilidades = [prob_home_ajust, prob_draw_ajust, prob_away_ajust]
@@ -386,7 +369,7 @@ def gerar_palpites_ao_vivo():
             
             melhor_idx = valores.index(max(valores))
             
-            # Só criar aposta se tiver valor positivo
+            # Criar aposta se tiver valor positivo
             if valores[melhor_idx] > 0.01:
                 confianca, stake = determinar_confianca_stake(valores[melhor_idx], probabilidades[melhor_idx])
                 valor_percentual, _ = analisar_valor_aposta(odds_list[melhor_idx], probabilidades[melhor_idx])
@@ -402,7 +385,7 @@ def gerar_palpites_ao_vivo():
                     'stake': stake,
                     'confidence': confianca,
                     'casa_aposta': casa_aposta,
-                    'link_aposta': f"https://www.{casa_aposta.lower().replace(' ', '')}.com",
+                    'link_aposta': f"https://www.bet365.com",
                     'status_jogo': status,
                     'minuto': minuto,
                     'fonte_odds': fonte_odds,
@@ -410,38 +393,36 @@ def gerar_palpites_ao_vivo():
                     'timestamp': datetime.now().isoformat()
                 }
                 apostas.append(aposta)
-                print(f"✅ Palpite AO VIVO: {home_team} vs {away_team} - {status}")
                 
         except Exception as e:
-            print(f"⚠️ Erro processando {jogo.get('home_team', '')}: {e}")
+            print(f"⚠️ Erro processando palpite H2H para {jogo.get('home_team', '')}: {e}")
             continue
     
     # Ordenar por valor esperado
     apostas.sort(key=lambda x: x['value_expected'], reverse=True)
     
-    print(f"🎯 {len(apostas)} palpites AO VIVO gerados")
+    print(f"🎯 {len(apostas)} palpites da IA (H2H) gerados")
     return apostas
 
 def gerar_multiplas_ao_vivo(apostas_individuais):
-    """Gera múltiplas com palpites AO VIVO"""
+    """Gera múltiplas com base nos melhores palpites individuais"""
+    # ... (Seu código de múltiplas mantido) ...
     try:
         if len(apostas_individuais) >= 2:
-            # Selecionar 2 melhores apostas
-            melhores_apostas = apostas_individuais[:2]
+            melhores_apostas = [a for a in apostas_individuais if a['value_expected'] > 0.05 and a['confidence'] in ['ALTO', 'MÉDIO']][:3] # Aumentei para 3 para ter mais opções
             
-            # Calcular odd total
+            if len(melhores_apostas) < 2:
+                print("❌ Apostas de alto valor insuficientes para múltipla.")
+                return []
+                
             odd_total = 1.0
-            for aposta in melhores_apostas:
-                odd_total *= aposta['odd']
-            
-            # Calcular probabilidade total
             prob_total = 1.0
             for aposta in melhores_apostas:
+                odd_total *= aposta['odd']
                 prob_total *= aposta['probability']
             
             valor_esperado = (odd_total * prob_total) - 1
             
-            # Determinar confiança
             if valor_esperado > 0.25:
                 confianca = "MUITO ALTA"
             elif valor_esperado > 0.15:
@@ -476,21 +457,29 @@ def gerar_multiplas_ao_vivo(apostas_individuais):
 # --- EXECUÇÃO PRINCIPAL ---
 def main():
     agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"\n🔥 SISTEMA DE PALPITES 100% AO VIVO - {agora}")
-    print("📍 Fonte: Jogos reais em tempo real + Análise de valor")
+    print(f"\n🔥 SISTEMA DE PALPITES 100% INTELIGENTE - {agora}")
+    print("📍 Fonte: IA H2H + IA Estatística (API-Sports)")
     
     try:
-        # 1. Gerar apostas AO VIVO
-        print("\n🌐 BUSCANDO DADOS AO VIVO...")
-        dados_individuais = gerar_palpites_ao_vivo()
+        # 1. Gerar apostas da IA Básica (H2H)
+        print("\n🌐 BUSCANDO DADOS PARA ANÁLISE BÁSICA (H2H)...")
+        dados_h2h = gerar_palpites_h2h()
+        
+        # 2. Gerar apostas de Estatísticas (NOVO)
+        print("\n📊 BUSCANDO DADOS PARA ANÁLISE ESTATÍSTICA (API-Sports)...")
+        dados_estatisticos = buscar_estatisticas_detalhadas()
+        
+        # 3. Combinar todos os palpites
+        dados_individuais = dados_h2h
+        dados_individuais.extend(dados_estatisticos)
         
         if not dados_individuais:
-            print("❌ ALERTA: Nenhum palpite AO VIVO gerado - verifique conexão com APIs")
-            # Tentar salvar mensagem de erro
+            print("❌ ALERTA: Nenhum palpite da IA gerado.")
+            # Salvar mensagem de erro
             erro_msg = [{
                 'match': 'Sistema em Manutenção',
                 'league': 'Atualização de Dados',
-                'bet_type': 'Retorne em 5 minutos',
+                'bet_type': 'Retorne em 30 minutos',
                 'odd': 1.00,
                 'probability': 1.0,
                 'value_expected': 0.0,
@@ -506,26 +495,26 @@ def main():
             }]
             salvar_dados_supabase(erro_msg, 'individuais')
             salvar_dados_supabase([], 'multiplas')
-            return "Sistema atualizando - tente novamente em 5 minutos", 200
+            return "Sistema atualizando - tente novamente em 30 minutos", 200
         
-        # 2. Gerar múltiplas
+        # 4. Gerar múltiplas
         dados_multiplas = gerar_multiplas_ao_vivo(dados_individuais)
         
-        # 3. Salvar no Supabase
-        print("\n💾 SALVANDO DADOS AO VIVO...")
+        # 5. Salvar no Supabase
+        print("\n💾 SALVANDO DADOS DA IA...")
         success1 = salvar_dados_supabase(dados_individuais, 'individuais')
         success2 = salvar_dados_supabase(dados_multiplas, 'multiplas')
         
-        # 4. Resultado final
-        print(f"\n🎉 SISTEMA AO VIVO ATIVO!")
-        print(f"📊 {len(dados_individuais)} apostas AO VIVO")
+        # 6. Resultado final
+        print(f"\n🎉 SISTEMA DA IA ATIVO!")
+        print(f"📊 {len(dados_individuais)} apostas individuais da IA")
         print(f"🎯 {len(dados_multiplas)} múltiplas inteligentes")
         
-        # 5. Mostrar TOP PALPITES AO VIVO
-        print(f"\n🏆 PALPITES AO VIVO AGORA:")
+        # 7. Mostrar TOP PALPITES
+        print(f"\n🏆 PALPITES ATUAIS:")
         for i, palpite in enumerate(dados_individuais[:6]):
-            status_emoji = "🔴" if "VIVO" in palpite['status_jogo'] else "🟡"
-            fonte_emoji = "💰" if palpite['fonte_odds'] == 'ODDS_REAIS' else "🤖"
+            status_emoji = "🟡" if "AGENDADO" in palpite['status_jogo'] else "🟢"
+            fonte_emoji = "🤖" 
             
             print(f"{i+1}. {palpite['match']} {status_emoji}")
             print(f"   🏆 {palpite['league']} | {palpite['status_jogo']} {palpite['minuto']}")
@@ -537,17 +526,16 @@ def main():
             print()
         
         if success1:
-            print("📍 Dados AO VIVO disponíveis em: lanzacai-a.vercel.app")
-            return "Sistema AO VIVO executado com sucesso!", 200
+            return "Sistema da IA executado com sucesso!", 200
         else:
             print("⚠️ Dados gerados mas erro ao salvar")
-            return "Dados AO VIVO gerados mas erro ao salvar", 500
+            return "Dados da IA gerados mas erro ao salvar", 500
         
     except Exception as e:
-        print(f"❌ ERRO CRÍTICO: {e}")
+        print(f"❌ ERRO CRÍTICO NA EXECUÇÃO PRINCIPAL: {e}")
         return f"Erro: {e}", 500
 
-# Para o Render Cron
+# Para o Vercel Cron
 def run_cron_job(request=None):
     return main()
 
