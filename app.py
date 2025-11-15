@@ -7,7 +7,7 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 CORS(app)
 
 # ---------------------------------------------------------
-# 🔐 CONFIGURAÇÕES DE SEGURANÇA
+# CONFIG
 # ---------------------------------------------------------
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "chave_teste")
 
@@ -16,7 +16,7 @@ SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
 if not SUPABASE_URL or not SUPABASE_ANON_KEY or not SUPABASE_SERVICE_KEY:
-    raise RuntimeError("❌ Variáveis do Supabase ausentes no Render!")
+    raise RuntimeError("Variáveis do Supabase ausentes no Render!")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
@@ -28,7 +28,7 @@ def index():
     return render_template("index.html")
 
 # ---------------------------------------------------------
-# 🔐 LOGIN
+# LOGIN
 # ---------------------------------------------------------
 @app.route("/api/login", methods=["POST"])
 def login():
@@ -36,17 +36,19 @@ def login():
     email = data.get("email")
     password = data.get("password")
 
-    user = (
+    result = (
         supabase
         .table("users")
         .select("*")
         .eq("email", email)
         .eq("password", password)
-        .maybe_single()
+        .execute()
     )
 
-    if not user:
+    if not result.data:
         return jsonify({"status": "error", "msg": "Email ou senha incorretos."})
+
+    user = result.data[0]
 
     session["user"] = user["email"]
     session["is_admin"] = user.get("is_admin", False)
@@ -54,7 +56,7 @@ def login():
     return jsonify({"status": "ok", "msg": "Login autorizado!", "user": user})
 
 # ---------------------------------------------------------
-# 🔐 REGISTRO (vai para tabela pending_users)
+# REGISTRO
 # ---------------------------------------------------------
 @app.route("/api/register", methods=["POST"])
 def register():
@@ -82,7 +84,7 @@ def register():
         return jsonify({"status": "error", "msg": "Email já registrado."})
 
     if pending.data:
-        return jsonify({"status": "error", "msg": "Cadastro já solicitado!"})
+        return jsonify({"status": "error", "msg": "Cadastro já solicitado."})
 
     supabase.table("pending_users").insert({
         "email": email,
@@ -92,7 +94,7 @@ def register():
     return jsonify({"status": "ok", "msg": "Cadastro enviado! Aguarde aprovação."})
 
 # ---------------------------------------------------------
-# 🔐 LISTAR PENDENTES (somente admin)
+# LISTAR PENDENTES (ADMIN)
 # ---------------------------------------------------------
 @app.route("/api/pending", methods=["GET"])
 def pending_users():
@@ -103,7 +105,7 @@ def pending_users():
     return jsonify({"status": "ok", "pending": result.data})
 
 # ---------------------------------------------------------
-# 🔐 APROVAR USUÁRIO
+# APROVAR
 # ---------------------------------------------------------
 @app.route("/api/approve", methods=["POST"])
 def approve_user():
@@ -113,31 +115,31 @@ def approve_user():
     data = request.json
     email = data.get("email")
 
-    # pega dados na tabela pending
-    res = (
-        supabase.table("pending_users")
+    result = (
+        supabase
+        .table("pending_users")
         .select("*")
         .eq("email", email)
-        .maybe_single()
+        .execute()
     )
 
-    if not res:
+    if not result.data:
         return jsonify({"status": "error", "msg": "Usuário não encontrado."})
 
-    # cria usuário na tabela users
+    user = result.data[0]
+
     supabase.table("users").insert({
-        "email": res["email"],
-        "password": res["password"],
+        "email": user["email"],
+        "password": user["password"],
         "is_admin": False
     }).execute()
 
-    # remove da pending
     supabase.table("pending_users").delete().eq("email", email).execute()
 
     return jsonify({"status": "ok", "msg": "Usuário aprovado!"})
 
 # ---------------------------------------------------------
-# 🔐 LOGOUT
+# LOGOUT
 # ---------------------------------------------------------
 @app.route("/api/logout", methods=["POST"])
 def logout():
