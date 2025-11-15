@@ -10,15 +10,11 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "chave_teste")
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-if not SUPABASE_URL or not SUPABASE_ANON_KEY or not SUPABASE_SERVICE_KEY:
-    raise RuntimeError("❌ Variáveis do Supabase ausentes!")
+# cliente certo (anon)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-# =========================================================
-# FRONT-END
 # =========================================================
 @app.route("/")
 def index():
@@ -35,13 +31,12 @@ def login():
     password = data.get("password")
 
     result = (
-        supabase
-        .table("users")
+        supabase.table("users")
         .select("*")
         .eq("email", email)
         .eq("password", password)
         .maybe_single()
-        .execute()          # <========= OBRIGATÓRIO!!!
+        .execute()
     )
 
     user = result.data
@@ -52,7 +47,7 @@ def login():
     session["user"] = user["email"]
     session["is_admin"] = user.get("is_admin", False)
 
-    return jsonify({"status": "ok", "msg": "Login autorizado!", "user": user})
+    return jsonify({"status": "ok", "user": user})
 
 
 # =========================================================
@@ -64,85 +59,62 @@ def register():
     email = data.get("email")
     password = data.get("password")
 
-    exists = (
-        supabase.table("users")
-        .select("email")
-        .eq("email", email)
-        .execute()
-    )
-
-    pending = (
-        supabase.table("pending_users")
-        .select("email")
-        .eq("email", email)
-        .execute()
-    )
+    exists = supabase.table("users").select("email").eq("email", email).execute()
+    pending = supabase.table("pending_users").select("email").eq("email", email).execute()
 
     if exists.data:
-        return jsonify({"status": "error", "msg": "Email já registrado."})
+        return jsonify({"status": "error", "msg": "Email já usado."})
 
     if pending.data:
-        return jsonify({"status": "error", "msg": "Cadastro já solicitado!"})
+        return jsonify({"status": "error", "msg": "Cadastro já solicitado."})
 
     supabase.table("pending_users").insert({
         "email": email,
         "password": password
     }).execute()
 
-    return jsonify({"status": "ok", "msg": "Cadastro enviado! Aguarde aprovação."})
+    return jsonify({"status": "ok", "msg": "Solicitação enviada!"})
 
 
 # =========================================================
-# LISTAR PENDENTES (apenas admin)
+# LISTAR PENDENTES
 # =========================================================
 @app.route("/api/pending", methods=["GET"])
 def pending_users():
     if not session.get("is_admin"):
         return jsonify({"status": "error", "msg": "Não autorizado."})
 
-    result = supabase.table("pending_users").select("*").execute()
-    return jsonify({"status": "ok", "pending": result.data})
+    rows = supabase.table("pending_users").select("*").execute()
+    return jsonify({"status": "ok", "pending": rows.data})
 
 
 # =========================================================
-# APROVAR USUÁRIO
+# APROVAR PENDENTE
 # =========================================================
 @app.route("/api/approve", methods=["POST"])
 def approve_user():
     if not session.get("is_admin"):
         return jsonify({"status": "error", "msg": "Não autorizado."})
 
-    data = request.json
-    email = data.get("email")
+    email = request.json.get("email")
 
-    res = (
-        supabase.table("pending_users")
-        .select("*")
-        .eq("email", email)
-        .maybe_single()
-        .execute()
-    )
+    res = supabase.table("pending_users").select("*").eq("email", email).maybe_single().execute()
 
     pend = res.data
-
     if not pend:
-        return jsonify({"status": "error", "msg": "Usuário não encontrado."})
+        return jsonify({"status": "error", "msg": "Não encontrado."})
 
-    # cria usuário definitivo
     supabase.table("users").insert({
         "email": pend["email"],
         "password": pend["password"],
         "is_admin": False
     }).execute()
 
-    # remove da tabela pending
     supabase.table("pending_users").delete().eq("email", email).execute()
 
-    return jsonify({"status": "ok", "msg": "Usuário aprovado!"})
+    return jsonify({"status": "ok", "msg": "Aprovado!"})
 
 
-# =========================================================
-# LOGOUT
 # =========================================================
 @app.route("/api/logout", methods=["POST"])
 def logout():
@@ -150,8 +122,6 @@ def logout():
     return jsonify({"status": "ok"})
 
 
-# =========================================================
-# INICIAR SERVIDOR
 # =========================================================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
