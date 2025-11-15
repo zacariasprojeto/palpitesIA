@@ -5,18 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>⚡ Lanzaca iA de Palpites</title>
 
-  <!-- CSS principal -->
   <link rel="stylesheet" href="/static/style.css">
-
-  <!-- Ícones -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
-  <!-- TELA DE LOGIN -->
+  <!-- TELA DE LOGIN / CADASTRO -->
   <div id="authContainer" class="tela-login">
     <div class="login-container">
-      
       <div class="login-logo">⚡</div>
       <h1 class="login-titulo">Lanzaca iA de Palpites</h1>
 
@@ -33,18 +30,17 @@
       <button id="loginBtn" class="botao-login">Entrar</button>
 
       <button id="showRegister"
-              class="botao-login"
-              style="margin-top:8px;background:transparent;border:1px solid var(--verde);color:var(--verde)">
+              class="botao-login botao-secundario">
         Cadastrar
       </button>
 
-      <div id="authMsg" style="margin-top:12px;color:var(--cinza-claro);min-height:18px;"></div>
+      <div id="authMsg" class="auth-msg"></div>
     </div>
   </div>
 
-  <!-- CONTEÚDO PRINCIPAL (oculto até logar) -->
+  <!-- DASHBOARD PRINCIPAL -->
   <div id="containerPrincipal" class="container-principal" style="display:none;">
-    
+
     <header class="cabecalho">
       <div class="logo">
         <h1><i class="fas fa-bolt"></i> Lanzaca iA de Palpites</h1>
@@ -52,6 +48,7 @@
 
       <div class="info-usuario">
         <div id="nomeUsuario" class="usuario-nome">Olá, usuário</div>
+        <div id="badgePlano" class="badge-plano"></div>
         <button id="btnAdminToggle" class="botao-admin">Admin</button>
         <button id="btnLogout" class="botao-logout">Sair</button>
       </div>
@@ -60,26 +57,25 @@
     <!-- Painel Admin -->
     <div id="adminPanel" class="admin-panel" style="display:none;">
       <h2>Usuários pendentes</h2>
-      <div id="pendingList">—</div>
+      <div id="pendingList">Nenhum cadastro pendente.</div>
     </div>
 
-    <!-- Status -->
+    <!-- Status simples só pra não ficar vazio -->
     <div class="barra-status">
       <div class="item-status">
         <div class="valor-status" id="apostasIndividuais">0</div>
-        <div style="color:var(--cinza-claro)">Individuais</div>
+        <div class="label-status">Individuais</div>
       </div>
       <div class="item-status">
         <div class="valor-status" id="apostasMultiplas">0</div>
-        <div style="color:var(--cinza-claro)">Múltiplas</div>
+        <div class="label-status">Múltiplas</div>
       </div>
       <div class="item-status">
         <div class="valor-status" id="apostasSeguras">0</div>
-        <div style="color:var(--cinza-claro)">Seguras</div>
+        <div class="label-status">Seguras</div>
       </div>
     </div>
 
-    <!-- Grids -->
     <h2 class="titulo-secao"><i class="fas fa-crown"></i> TOP 5 DO DIA</h2>
     <div id="topApostas" class="grid-apostas"></div>
 
@@ -93,114 +89,45 @@
     <div id="gridTodasApostas" class="grid-apostas"></div>
   </div>
 
+  <!-- PAYWALL / PLANO DE ACESSO (trial expirado) -->
+  <div id="paywallOverlay" class="paywall-overlay" style="display:none;">
+    <div class="paywall-card">
+      <button id="closePaywall" class="paywall-close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="paywall-top-icon">
+        <i class="fa-solid fa-medal"></i>
+      </div>
+
+      <h2>Desbloqueie o Acesso Completo</h2>
+      <p class="paywall-subtitle">
+        Seu período de teste terminou. Escolha um plano e faça o pagamento via PIX
+        para continuar recebendo os melhores palpites da Lanzaca iA.
+      </p>
+
+      <div id="trialInfo" class="paywall-trial-info"></div>
+
+      <div id="planList" class="paywall-plans"></div>
+
+      <div class="paywall-pix-box">
+        <div class="pix-label">Chave PIX para pagamento</div>
+        <div id="pixKey" class="pix-key"></div>
+        <div class="pix-help">
+          Envie o comprovante para o administrador. Assim que confirmado,
+          seu acesso é liberado ou renovado.
+        </div>
+      </div>
+
+      <button id="btnJaPaguei" class="botao-login">
+        Já paguei, vou enviar o comprovante
+      </button>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast" class="toast"></div>
 
-  <!-- JAVASCRIPT DIRETO NA PÁGINA -->
-  <script>
-    let isRegisterMode = false;
-
-    function setAuthMessage(msg, type="info") {
-      const el = document.getElementById("authMsg");
-      if (!el) return;
-      el.textContent = msg;
-      el.style.color = type === "error" ? "#ff6b6b" :
-                       type === "success" ? "#00ff88" : "#cccccc";
-    }
-
-    function toggleMode() {
-      const btnLogin = document.getElementById("loginBtn");
-      const btnToggle = document.getElementById("showRegister");
-
-      isRegisterMode = !isRegisterMode;
-
-      if (isRegisterMode) {
-        btnLogin.textContent = "Enviar cadastro";
-        btnToggle.textContent = "Já tenho conta";
-        setAuthMessage("Preencha email e senha para solicitar acesso.");
-      } else {
-        btnLogin.textContent = "Entrar";
-        btnToggle.textContent = "Cadastrar";
-        setAuthMessage("");
-      }
-    }
-
-    async function doLogin(email, password) {
-      const resp = await fetch("/api/login", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({email, password}),
-      });
-      const data = await resp.json();
-
-      if (data.status === "ok") {
-        setAuthMessage("Login autorizado!", "success");
-        document.getElementById("authContainer").style.display = "none";
-        document.getElementById("containerPrincipal").style.display = "block";
-        document.getElementById("nomeUsuario").textContent =
-          "Olá, " + data.user.email + "!";
-      } else {
-        setAuthMessage(data.msg, "error");
-      }
-    }
-
-    async function doRegister(email, password) {
-      const resp = await fetch("/api/register", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({email, password}),
-      });
-      const data = await resp.json();
-
-      if (data.status === "ok") {
-        setAuthMessage(data.msg, "success");
-      } else {
-        setAuthMessage(data.msg, "error");
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const emailInput = document.getElementById("email");
-      const passInput = document.getElementById("password");
-      const btnLogin = document.getElementById("loginBtn");
-      const btnToggle = document.getElementById("showRegister");
-      const btnLogout = document.getElementById("btnLogout");
-      const adminPanel = document.getElementById("adminPanel");
-      const btnAdminToggle = document.getElementById("btnAdminToggle");
-
-      btnLogin.addEventListener("click", async () => {
-        const email = emailInput.value.trim();
-        const password = passInput.value.trim();
-        if (!email || !password) {
-          setAuthMessage("Preencha email e senha.", "error");
-          return;
-        }
-        if (isRegisterMode) {
-          await doRegister(email, password);
-        } else {
-          await doLogin(email, password);
-        }
-      });
-
-      btnToggle.addEventListener("click", toggleMode);
-
-      passInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") btnLogin.click();
-      });
-
-      btnLogout.addEventListener("click", async () => {
-        await fetch("/api/logout", {method: "POST"});
-        document.getElementById("containerPrincipal").style.display = "none";
-        document.getElementById("authContainer").style.display = "flex";
-        setAuthMessage("Você saiu da conta.");
-      });
-
-      btnAdminToggle.addEventListener("click", () => {
-        adminPanel.style.display =
-          adminPanel.style.display === "block" ? "none" : "block";
-      });
-    });
-  </script>
-
+  <script src="/static/app.js"></script>
 </body>
 </html>
