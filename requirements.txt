@@ -1,6 +1,6 @@
-Flask>=2.0
-requests
+flask
+flask-cors
 gunicorn
-werkzeug
+supabase
 python-dotenv
 
