@@ -3,170 +3,174 @@ from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from supabase import create_client, Client
-import requests
-import random
-import string
 
-# ==========================
-# CONFIGURAÇÃO FLASK
-# ==========================
+# -----------------------------------
+# CONFIGURAÇÃO DO APP
+# -----------------------------------
+
 app = Flask(__name__)
 CORS(app)
 
-# ==========================
-# SUPABASE CONFIG
-# ==========================
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")  # SERVICE KEY!
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+PIX_KEY = os.getenv("PIX_KEY", "0000000000000")
+ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
 
-# ==========================
-# API DE PALPITES (API-FOOTBALL)
-# ==========================
-API_FOOTBALL_KEY = os.getenv("ODDS_API_KEY")  # sua key ed6c277617a7e4bfb0ad840ecedce5fc
+# -----------------------------------
+# FUNÇÃO – VERIFICA SE USUÁRIO TEM ACESSO
+# -----------------------------------
 
-# ==========================
-# FUNÇÃO PARA ENVIAR CÓDIGO POR EMAIL (SUPABASE)
-# ==========================
-def enviar_codigo_email(email, codigo):
-    try:
-        supabase.table("pending_users").insert({
-            "email": email,
-            "codigo": codigo,
-            "created_at": datetime.utcnow().isoformat()
-        }).execute()
+def verificar_acesso(usuario):
+    email = usuario["email"]
+    is_admin = usuario.get("is_admin", False)
+    trial_end = usuario.get("trial_end")
+    paid_until = usuario.get("paid_until")
+
+    if is_admin:
         return True
-    except:
-        return False
 
-# ==========================
-# GERAR CÓDIGO DE 6 DÍGITOS
-# ==========================
-def gerar_codigo():
-    return ''.join(random.choices(string.digits, k=6))
+    agora = datetime.utcnow()
 
-# ==========================
-# ROTA HOME → CARREGA O FRONTEND
-# ==========================
+    if paid_until and datetime.fromisoformat(paid_until.replace("Z", "")) > agora:
+        return True
+
+    if trial_end and datetime.fromisoformat(trial_end.replace("Z", "")) > agora:
+        return True
+
+    return False
+
+# -----------------------------------
+# ROTA – HOME
+# -----------------------------------
+
 @app.route("/")
 def home():
     return render_template("index.html")
 
-# ==========================
-# ROTA DE CADASTRO
-# ==========================
+# -----------------------------------
+# ROTA – CADASTRO
+# -----------------------------------
+
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.json
     nome = data.get("nome")
+    email = data.get("email")
     celular = data.get("celular")
-    email = data.get("email")
-    senha = data.get("senha")
+    password = data.get("password")
 
-    if not all([nome, celular, email, senha]):
-        return jsonify({"error": "Campos incompletos"}), 400
+    # Já existe?
+    existe = supabase.table("users").select("*").eq("email", email).execute()
+    if existe.data:
+        return jsonify({"error": "Email já cadastrado."}), 400
 
-    # verifica se email já existe
-    check = supabase.table("users").select("*").eq("email", email).execute()
-    if check.data:
-        return jsonify({"error": "Email já cadastrado"}), 400
+    trial = datetime.utcnow() + timedelta(days=30)
 
-    codigo = gerar_codigo()
-
-    # salva pendente até confirmar e-mail
-    enviar_codigo_email(email, codigo)
-
-    return jsonify({"success": True, "message": "Código enviado ao email"})
-
-
-# ==========================
-# CONFIRMAR CÓDIGO DO EMAIL
-# ==========================
-@app.route("/api/confirmar", methods=["POST"])
-def confirmar():
-    data = request.json
-    email = data.get("email")
-    codigo_digitado = data.get("codigo")
-
-    pendente = supabase.table("pending_users").select("*").eq("email", email).order("id", desc=True).limit(1).execute()
-
-    if not pendente.data:
-        return jsonify({"error": "Nenhum código encontrado"}), 400
-
-    codigo_real = pendente.data[0]["codigo"]
-
-    if codigo_real != codigo_digitado:
-        return jsonify({"error": "Código incorreto"}), 400
-
-    # criar usuário com trial de 30 dias
-    supabase.table("users").insert({
+    novo = supabase.table("users").insert({
+        "nome": nome,
         "email": email,
-        "nome": email.split("@")[0],
-        "senha": "definir_senha_no_cadastro",
-        "acesso_ate": (datetime.utcnow() + timedelta(days=30)).isoformat(),
-        "role": "user"
+        "password": password,
+        "celular": celular,
+        "plan": "trial",
+        "trial_end": trial.isoformat(),
+        "paid_until": None,
+        "is_admin": False
     }).execute()
 
     return jsonify({"success": True})
 
+# -----------------------------------
+# ROTA – LOGIN
+# -----------------------------------
 
-# ==========================
-# LOGIN
-# ==========================
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.json
     email = data.get("email")
-    senha = data.get("senha")
+    password = data.get("password")
 
-    user = supabase.table("users").select("*").eq("email", email).eq("senha", senha).execute()
+    user = supabase.table("users").select("*").eq("email", email).eq("password", password).execute()
 
     if not user.data:
-        return jsonify({"error": "Email ou senha incorretos"}), 400
+        return jsonify({"error": "Credenciais inválidas"}), 401
 
     user = user.data[0]
 
-    # verificar expiração do plano
-    if user["acesso_ate"] and datetime.fromisoformat(user["acesso_ate"]) < datetime.utcnow():
-        return jsonify({"error": "Acesso expirado"}), 403
+    if not verificar_acesso(user):
+        return jsonify({
+            "error": "acesso_bloqueado",
+            "pix": PIX_KEY,
+            "mensagem": "Seu acesso expirou. Faça o pagamento para continuar."
+        }), 403
 
     return jsonify({
         "success": True,
-        "user": user
+        "user": {
+            "id": user["id"],
+            "nome": user["nome"],
+            "email": user["email"],
+            "is_admin": user["is_admin"]
+        }
     })
 
+# -----------------------------------
+# ROTA – PAGAMENTO PIX (APROVA MANUAL AUTOMÁTICO)
+# -----------------------------------
 
-# ==========================
-# ROTA ADMIN
-# ==========================
-@app.route("/api/admin/pendentes")
-def admin_pendentes():
-    pendentes = supabase.table("pending_users").select("*").execute()
-    return jsonify(pendentes.data)
+@app.route("/api/pagamento/confirmar", methods=["POST"])
+def confirmar_pagamento():
+    email = request.json.get("email")
 
+    novo_prazo = datetime.utcnow() + timedelta(days=30)
 
-# ==========================
-# API DE PALPITES (TOP 5, SEGUROS, MÚLTIPLAS)
-# ==========================
+    supabase.table("users").update({
+        "paid_until": novo_prazo.isoformat(),
+        "plan": "mensal"
+    }).eq("email", email).execute()
+
+    return jsonify({"success": True})
+
+# -----------------------------------
+# ROTA – ADMIN LISTA USUÁRIOS
+# -----------------------------------
+
+@app.route("/api/admin/usuarios", methods=["GET"])
+def admin_usuarios():
+    users = supabase.table("users").select("id,nome,email,plan,trial_end,paid_until,is_admin").execute()
+    return jsonify(users.data)
+
+# -----------------------------------
+# ROTA – ADMIN LIBERAR USUÁRIO
+# -----------------------------------
+
+@app.route("/api/admin/liberar", methods=["POST"])
+def admin_liberar():
+    user_id = request.json.get("user_id")
+    dias = request.json.get("dias", 30)
+
+    novo = datetime.utcnow() + timedelta(days=dias)
+
+    supabase.table("users").update({
+        "paid_until": novo.isoformat(),
+        "plan": "liberado_admin"
+    }).eq("id", user_id).execute()
+
+    return jsonify({"success": True})
+
+# -----------------------------------
+# ROTA – API DAS ODDS / PALPITES
+# -----------------------------------
+
 @app.route("/api/palpites")
 def palpites():
-    headers = {
-        "x-apisports-key": API_FOOTBALL_KEY
-    }
+    # Aqui depois vamos integrar com sua API de apostas (API-FOOTBALL)
+    return jsonify({"status": "ok", "mensagem": "API de palpites conectada!"})
 
-    url = "https://v3.football.api-sports.io/odds?region=eu&sport=soccer"
+# -----------------------------------
+# START
+# -----------------------------------
 
-    r = requests.get(url, headers=headers)
-
-    try:
-        return jsonify(r.json())
-    except:
-        return jsonify({"error": "Erro na API"}), 500
-
-
-# ==========================
-# RUN
-# ==========================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
