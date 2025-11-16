@@ -7,14 +7,13 @@ app = Flask(__name__)
 app.secret_key = "LanzacaIA2025"
 
 # ==============================
-# SUPABASE CONFIG
+# SUPABASE CONFIG CORRIGIDA
 # ==============================
 
-SUPABASE_URL = "https://kctzwwczcthjmjdgvxuks.supabase.co"
+SUPABASE_URL = "https://kctzwwczcthjmdgvxuks.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtjdHp3d2N6Y3Roam1kZ3Z4dWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5ODIwNDYsImV4cCI6MjA3ODU1ODA0Nn0.HafwqrEnJ5Slm3wRg4_KEvGHiTuNJafztVfWbuSZ_84"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
 
 # ==============================
 # FUNÇÕES
@@ -24,11 +23,11 @@ def gerar_codigo():
     return random.randint(100000, 999999)
 
 def enviar_email(email, codigo):
-    # No Render vai aparecer nos LOGS!
+    """Fake email – Render mostrará o código no log."""
     print("\n==============================")
-    print("⚡ LANZACA IA — CÓDIGO DE CONFIRMAÇÃO ⚡")
-    print(f"E-mail: {email}")
-    print(f"Código enviado: {codigo}")
+    print("⚡ CÓDIGO LANZACA IA ⚡")
+    print(f"Email: {email}")
+    print(f"Seu código: {codigo}")
     print("==============================\n")
 
 
@@ -72,17 +71,17 @@ def cadastro():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
-    # Se já existe usuário definitivo
+    # Já existe usuário?
     existe = supabase.table("users").select("*").eq("email", email).execute()
     if len(existe.data) > 0:
-        return render_template("cadastro.html", erro="E-mail já cadastrado.")
+        return render_template("cadastro.html", erro="Email já cadastrado.")
 
-    # Se existe pendente remove e recria
+    # Se já existe pendente, remover
     pend = supabase.table("pending_users").select("*").eq("email", email).execute()
     if len(pend.data) > 0:
         supabase.table("pending_users").delete().eq("email", email).execute()
 
-    # salva pendente
+    # Criar pendente
     supabase.table("pending_users").insert({
         "nome": nome,
         "celular": celular,
@@ -90,23 +89,22 @@ def cadastro():
         "senha": senha
     }).execute()
 
-    # código
+    # Código
     codigo = gerar_codigo()
 
-    # salva código
+    # Registrar código
     supabase.table("confirm_codes").insert({
         "email": email,
         "codigo": codigo
     }).execute()
 
-    # envia fake
     enviar_email(email, codigo)
 
     return redirect(f"/confirmar?email={email}")
 
 
 # ==============================
-# CONFIRMAR CÓDIGO
+# CONFIRMAÇÃO
 # ==============================
 
 @app.route("/confirmar", methods=["GET"])
@@ -124,18 +122,19 @@ def api_confirmar():
     if not codigo or not email:
         return jsonify({"message": "Dados incompletos"}), 400
 
-    busca = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo).execute()
-
-    if len(busca.data) == 0:
+    # Ver se código está correto
+    consulta = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo).execute()
+    if len(consulta.data) == 0:
         return jsonify({"message": "Código incorreto"}), 401
 
+    # Ver pendente
     pend = supabase.table("pending_users").select("*").eq("email", email).execute()
-
     if len(pend.data) == 0:
         return jsonify({"message": "Nenhum cadastro pendente encontrado"}), 404
 
     usuario = pend.data[0]
 
+    # Criar usuário definitivo
     supabase.table("users").insert({
         "nome": usuario["nome"],
         "celular": usuario["celular"],
@@ -144,7 +143,7 @@ def api_confirmar():
         "is_admin": False
     }).execute()
 
-    # limpar pendência e código
+    # Remover pendente & código
     supabase.table("pending_users").delete().eq("email", email).execute()
     supabase.table("confirm_codes").delete().eq("email", email).execute()
 
@@ -173,7 +172,7 @@ def logout():
 
 
 # ==============================
-# RUN
+# RENDER
 # ==============================
 
 if __name__ == "__main__":
