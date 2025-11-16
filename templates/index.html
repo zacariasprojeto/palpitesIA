@@ -3,112 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lanzaca IA</title>
-    <style>
+    <title>Lanzaca IA - Login</title>
 
+    <style>
         body {
             margin: 0;
-            padding: 0;
-            height: 100vh;
-            background: #0a0a0a;
             font-family: Arial, sans-serif;
+            background: #000;
             color: white;
             display: flex;
             justify-content: center;
             align-items: center;
+            height: 100vh;
         }
 
         .card {
-            background: #111;
-            width: 420px;
-            padding: 35px;
-            border-radius: 14px;
-            border: 2px solid #00ff80;
+            background: #0c0c0c;
+            padding: 40px;
+            width: 380px;
+            border-radius: 15px;
+            border: 2px solid #00ff88;
+            box-shadow: 0 0 25px #00ff88;
             text-align: center;
-            box-shadow: 0 0 25px #00ff80;
         }
 
         .logo {
-            font-size: 45px;
-            color: #00ff80;
+            font-size: 40px;
+            color: #00ff88;
             margin-bottom: 10px;
         }
 
-        h1 {
-            margin-bottom: 5px;
+        h2 {
+            margin: 0;
             font-size: 26px;
-            color: #00ff80;
+            color: #00ff88;
         }
 
-        .desc {
+        p.sub {
             margin-top: -5px;
-            margin-bottom: 25px;
-            color: #ccc;
-            font-size: 14px;
+            font-size: 13px;
+            color: #b3b3b3;
         }
 
-        label {
-            display: block;
-            text-align: left;
-            margin-top: 15px;
-            margin-bottom: 5px;
-            color: #ddd;
-            font-size: 14px;
-        }
-
+        /* 🔥 INPUTS NO TAMANHO PADRÃO */
         input {
-            width: 100%;
+            width: 92%;
             padding: 12px;
+            margin-top: 12px;
             border-radius: 6px;
-            border: none;
-            outline: none;
+            border: 1px solid #1f1f1f;
             background: #1a1a1a;
             color: white;
             font-size: 15px;
-            border: 1px solid #0f0;
         }
 
-        .btn {
+        input:focus {
+            outline: none;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+        }
+
+        button {
             width: 100%;
-            margin-top: 20px;
-            background: #00ff80;
-            color: black;
             padding: 14px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
+            background: #00ff88;
+            color: black;
             border: none;
-        }
-
-        .btn:hover {
-            background: #00cc66;
-        }
-
-        .signup {
             margin-top: 18px;
-            font-size: 14px;
-            color: #ccc;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
         }
 
-        .signup a {
-            color: #00ff80;
-            font-weight: bold;
+        button:hover {
+            background: #00cc6a;
+        }
+
+        .link {
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        .link a {
+            color: #00ff88;
             text-decoration: none;
         }
 
         .error {
-            color: red;
             margin-top: 10px;
+            color: #ff5050;
             font-size: 14px;
         }
-
     </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="logo">⚡</div>
+        <h2>Lanzaca IA</h2>
+        <p class="sub">Sistema Premium de Análise de Apostas</p>
+
+        <input type="text" id="email" placeholder="Usuário">
+        <input type="password" id="senha" placeholder="Senha">
+
+        <button onclick="login()">➜ Entrar no Sistema</button>
+
+        <div class="link">
+            Não tem conta? <a href="/cadastro">Cadastrar</a>
+        </div>
+
+        <div id="erro" class="error" style="display:none;">Credenciais inválidas</div>
+    </div>
 
     <script>
         async function login() {
-            const email = document.getElementById("email").value;
-            const senha = document.getElementById("senha").value;
+            const email = document.getElementById("email").value.trim();
+            const senha = document.getElementById("senha").value.trim();
 
             const resp = await fetch("/api/login", {
                 method: "POST",
@@ -119,34 +130,12 @@
             const data = await resp.json();
 
             if (resp.status === 200) {
-                window.location.href = "/dashboard";
+                window.location.href = data.redirect;
             } else {
-                document.getElementById("msg").innerText = data.error || "Credenciais inválidas";
+                document.getElementById("erro").style.display = "block";
             }
         }
     </script>
-</head>
-
-<body>
-
-    <div class="card">
-        <div class="logo">⚡</div>
-
-        <h1>Lanzaca IA</h1>
-        <p class="desc">Sistema Premium de Análise de Apostas</p>
-
-        <label>Usuário</label>
-        <input id="email" type="text" placeholder="Digite seu usuário">
-
-        <label>Senha</label>
-        <input id="senha" type="password" placeholder="Digite sua senha">
-
-        <button class="btn" onclick="login()">➜ Entrar no Sistema</button>
-
-        <p class="signup">Não tem conta? <a href="/cadastro">Cadastrar</a></p>
-
-        <p id="msg" class="error"></p>
-    </div>
 
 </body>
 </html>
