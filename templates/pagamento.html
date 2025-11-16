@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Renovar Licença - Lanzaca IA</title>
+    <style>
+        body {
+            background: #000;
+            color: white;
+            font-family: Arial;
+            text-align: center;
+            padding-top: 40px;
+        }
+
+        .card {
+            background: #0c0c0c;
+            width: 420px;
+            margin: auto;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #00ff88;
+            box-shadow: 0 0 25px #00ff88;
+        }
+
+        h1 {
+            color: #00ff88;
+        }
+
+        .plan {
+            margin-top: 30px;
+            padding: 15px;
+            background: #111;
+            border-radius: 10px;
+            border: 1px solid #00ff88;
+            cursor: pointer;
+        }
+
+        img {
+            margin-top: 10px;
+            width: 220px;
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>Licença Expirada</h1>
+        <p>Escolha um plano e realize o pagamento para continuar usando o sistema.</p>
+
+        <div class="plan" onclick="mostrarQR('mensal')">
+            💸 Plano Mensal — R$ 29,90
+        </div>
+
+        <div class="plan" onclick="mostrarQR('trimestral')">
+            💸 Plano Trimestral — R$ 69,90
+        </div>
+
+        <div class="plan" onclick="mostrarQR('anual')">
+            💸 Plano Anual — R$ 149,90
+        </div>
+
+        <div id="qrArea" style="margin-top:20px; display:none;">
+            <h3>Escaneie o QR Code:</h3>
+            <img id="qrImage" src="">
+        </div>
+    </div>
+
+
+<script>
+    function mostrarQR(plano) {
+        let url = "";
+
+        if (plano === "mensal") {
+            url = "/static/qr/qr_mensal.png";
+        } else if (plano === "trimestral") {
+            url = "/static/qr/qr_trimestral.png";
+        } else if (plano === "anual") {
+            url = "/static/qr/qr_anual.png";
+        }
+
+        document.getElementById("qrImage").src = url;
+        document.getElementById("qrArea").style.display = "block";
+    }
+</script>
+
+</body>
+</html>
