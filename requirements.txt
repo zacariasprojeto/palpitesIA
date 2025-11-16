@@ -1,13 +1,6 @@
-flask
-flask-cors
+Flask
 gunicorn
-
-supabase
-postgrest
-httpx
+flask-cors
 requests
-
+supabase
 python-dotenv
-qrcode
-Pillow
-pytz
