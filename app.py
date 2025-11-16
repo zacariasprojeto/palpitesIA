@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
 from supabase import create_client, Client
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 import smtplib
 from email.mime.text import MIMEText
@@ -8,65 +8,63 @@ from email.mime.text import MIMEText
 app = Flask(__name__)
 app.secret_key = "LanzacaIA2025"
 
-# ============================================
-# SUPABASE CONFIGURAÇÃO
-# ============================================
+# ==============================
+# SUPABASE
+# ==============================
 
 SUPABASE_URL = "https://kctzwwzcthjmdgvxuks.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtjdHp3d2N6Y3Roam1kZ3Z4dWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5ODIwNDYsImV4cCI6MjA3ODU1ODA0Nn0.HafwqrEnJ5Slm3wRg4_KEvGHiTuNJafztVfWbuSZ_84"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtjdHp3d2N6Y3Roam1kZ3Z4dWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5ODIwNDYsImV4cCI6MjA3ODU1ODA0Nn0.HafwqrEnJ5Slm3wRg4_KEvGHiTuNJafztVfWbuSZ_84"   # <-- COLOQUE SUA CHAVE
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# ==============================
+# SMTP BREVO (FUNCIONANDO)
+# ==============================
 
-# ============================================
-# FUNÇÕES ÚTEIS
-# ============================================
+SMTP_HOST = "smtp-relay.brevo.com"
+SMTP_PORT = 587
+SMTP_USER = "9bb9a5001@smtp-brevo.com"  # Login SMTP
+SMTP_PASS = "xsmtpsib-6962cab20aa9f005097326b04d6051b45f2fb6ee134ba1f54d982061a7cbeaf5-PnMJHWR2pLnU3Qqq"
+
+def enviar_email_destino(destino, codigo):
+    try:
+        corpo = f"""
+        <h2>Seu código de confirmação</h2>
+        <p>Use o código abaixo para concluir seu cadastro:</p>
+        <h1>{codigo}</h1>
+        <p>Equipe Lanzaca IA ⚡</p>
+        """
+
+        msg = MIMEText(corpo, "html")
+        msg["Subject"] = "Código de Confirmação - Lanzaca IA"
+        msg["From"] = SMTP_USER
+        msg["To"] = destino
+
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASS)
+        server.sendmail(SMTP_USER, destino, msg.as_string())
+        server.quit()
+
+        print("📧 EMAIL ENVIADO COM SUCESSO PARA:", destino)
+
+    except Exception as e:
+        print("❌ ERRO AO ENVIAR EMAIL:", e)
+
+
+# ==============================
+# FUNÇÕES AUXILIARES
+# ==============================
 
 def gerar_codigo():
     return random.randint(100000, 999999)
 
 
-# === Envio de e-mail REAL via BREVO ===
-def enviar_email(email, codigo):
-    smtp_host = "smtp-relay.brevo.com"
-    smtp_port = 587
-    smtp_user = "9bb9a5001@smtp-brevo.com"
-    smtp_pass = "xsmtpsib-6962cab20aa9f005097326b04d6051b45f2fb6ee134ba1f54d982061a7cbeaf5-PnMJHWR2pLnU3Qqq"
+# ==============================
+# ROTAS – LOGIN
+# ==============================
 
-    corpo = f"""
-Olá! 👋
-
-Seu código de confirmação para acessar o sistema *Lanzaca IA* é:
-
-👉 **{codigo}**
-
-Use este código para concluir seu cadastro.
-
-Atenciosamente,  
-Equipe Lanzaca IA ⚡
-"""
-
-    msg = MIMEText(corpo, "plain", "utf-8")
-    msg["Subject"] = "Código de Confirmação - Lanzaca IA"
-    msg["From"] = smtp_user
-    msg["To"] = email
-
-    try:
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
-            server.sendmail(smtp_user, [email], msg.as_string())
-            print("✔ EMAIL ENVIADO PARA:", email)
-    except Exception as e:
-        print("❌ ERRO AO ENVIAR EMAIL:", e)
-
-
-# ============================================
-# ROTAS DO SISTEMA
-# ============================================
-
-# LOGIN (Tela inicial)
-@app.route("/")
+@app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
 
@@ -76,20 +74,22 @@ def login():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
-    user = supabase.table("users").select("*").eq("email", email).eq("senha", senha).execute()
+    result = supabase.table("users").select("*").eq("email", email).eq("senha", senha).execute()
 
-    if len(user.data) == 0:
+    if len(result.data) == 0:
         return render_template("index.html", erro="Erro no login.")
 
-    session["email"] = user.data[0]["email"]
-    session["nome"] = user.data[0]["nome"]
+    user = result.data[0]
+
+    session["email"] = user["email"]
+    session["nome"] = user["nome"]
 
     return redirect("/dashboard")
 
 
-# ============================================
-# CADASTRO
-# ============================================
+# ==============================
+# ROTAS – CADASTRO
+# ==============================
 
 @app.route("/cadastro", methods=["GET", "POST"])
 def cadastro():
@@ -101,7 +101,7 @@ def cadastro():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
-    # Se já existe usuário definitivo
+    # Verificar se já existe user cadastrado
     existe = supabase.table("users").select("*").eq("email", email).execute()
     if len(existe.data) > 0:
         return render_template("cadastro.html", erro="Email já cadastrado.")
@@ -109,7 +109,7 @@ def cadastro():
     # Remover pendente antigo
     supabase.table("pending_users").delete().eq("email", email).execute()
 
-    # Salvar novo cadastro pendente
+    # Criar pendente
     supabase.table("pending_users").insert({
         "nome": nome,
         "celular": celular,
@@ -117,28 +117,27 @@ def cadastro():
         "senha": senha
     }).execute()
 
-    # Criar código
+    # Gerar código
     codigo = gerar_codigo()
 
-    # Salvar na tabela de confirmação
+    # Registrar código
     supabase.table("confirm_codes").delete().eq("email", email).execute()
     supabase.table("confirm_codes").insert({
         "email": email,
-        "codigo": codigo
+        "codigo": str(codigo)
     }).execute()
 
-    # Enviar por email
-    enviar_email(email, codigo)
+    # Enviar email REAL
+    enviar_email_destino(email, codigo)
 
-    # Redirecionar para tela de código
     return redirect(f"/confirmar?email={email}")
 
 
-# ============================================
-# CONFIRMAÇÃO DE CÓDIGO
-# ============================================
+# ==============================
+# ROTAS – CONFIRMAR CÓDIGO
+# ==============================
 
-@app.route("/confirmar")
+@app.route("/confirmar", methods=["GET"])
 def confirmar_tela():
     email = request.args.get("email")
     return render_template("confirmar.html", email=email)
@@ -150,21 +149,19 @@ def api_confirmar():
     codigo = dados.get("codigo")
     email = dados.get("email")
 
-    if not codigo or not email:
-        return jsonify({"message": "Dados incompletos"}), 400
+    consulta = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo).execute()
 
-    check = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo).execute()
-    if len(check.data) == 0:
+    if len(consulta.data) == 0:
         return jsonify({"message": "Código incorreto"}), 401
 
+    # Pegar pendente
     pend = supabase.table("pending_users").select("*").eq("email", email).execute()
-
     if len(pend.data) == 0:
-        return jsonify({"message": "Nenhum cadastro pendente encontrado"}), 404
+        return jsonify({"message": "Cadastro não encontrado"}), 404
 
     user = pend.data[0]
 
-    # Criar usuário definitivo
+    # Inserir definitivo
     supabase.table("users").insert({
         "nome": user["nome"],
         "celular": user["celular"],
@@ -173,16 +170,16 @@ def api_confirmar():
         "is_admin": False
     }).execute()
 
-    # Limpar pendentes
+    # Limpar registros temporários
     supabase.table("pending_users").delete().eq("email", email).execute()
     supabase.table("confirm_codes").delete().eq("email", email).execute()
 
-    return jsonify({"message": "Confirmado com sucesso"}), 200
+    return jsonify({"message": "Conta confirmada com sucesso"}), 200
 
 
-# ============================================
-# DASHBOARD
-# ============================================
+# ==============================
+# DASHBOARD / LOGOUT
+# ==============================
 
 @app.route("/dashboard")
 def dashboard():
@@ -191,19 +188,11 @@ def dashboard():
     return render_template("dashboard.html", nome=session["nome"])
 
 
-# ============================================
-# LOGOUT
-# ============================================
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
-
-# ============================================
-# RENDER
-# ============================================
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
