@@ -1,8 +1,13 @@
 flask
 flask-cors
 gunicorn
+
 supabase
+postgrest
+httpx
+requests
+
 python-dotenv
-
-
-
+qrcode
+Pillow
+pytz
