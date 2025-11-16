@@ -1,134 +1,148 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8" />
-    <title>Lanzaca IA</title>
-    <link rel="stylesheet" href="/static/style.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lanzaca IA – Login</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: radial-gradient(circle at top, #0f0f0f, #000000);
+            color: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-login {
+            width: 90%;
+            max-width: 420px;
+            background: rgba(20, 20, 20, 0.9);
+            padding: 30px;
+            border-radius: 18px;
+            border: 1px solid #0aff64;
+            box-shadow: 0 0 20px rgba(0, 255, 100, 0.15);
+            animation: fadeIn 0.6s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            font-size: 26px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 25px;
+            color: #0aff64;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border: 1px solid #333;
+            background: #111;
+            color: white;
+            font-size: 15px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        input:focus {
+            border-color: #0aff64;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            margin-top: 10px;
+            background: #0aff64;
+            color: black;
+            font-weight: bold;
+            font-size: 17px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            background: #11ff75;
+            transform: scale(1.02);
+        }
+
+        .link {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .link span {
+            color: #0aff64;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .erro {
+            color: #ff4d4d;
+            text-align: center;
+            margin-bottom: 10px;
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
 
-    <!-- TOAST NOTIFICAÇÃO -->
-    <div id="toast" class="toast"></div>
+    <div class="card-login">
+        <div class="logo">⚡ Lanzaca IA</div>
 
-    <!-- ===========================
-         LOGIN / CADASTRO
-    ============================ -->
-    <div id="authContainer" class="auth-container">
+        <div id="erro" class="erro">Erro ao fazer login</div>
 
-        <div class="auth-box">
-            <h2 class="titulo">Lanzaca IA</h2>
+        <input id="email" type="email" placeholder="Digite seu email" />
+        <input id="senha" type="password" placeholder="Digite sua senha" />
 
-            <p id="authMsg" class="auth-msg"></p>
+        <button class="btn" onclick="login()">Entrar</button>
 
-            <!-- Nome -->
-            <div id="nomeField" style="display:none;">
-                <input id="nome" type="text" class="input" placeholder="Seu nome completo" />
-            </div>
-
-            <!-- Celular -->
-            <div id="celularField" style="display:none;">
-                <input id="celular" type="text" class="input" placeholder="Seu celular" />
-            </div>
-
-            <!-- Email -->
-            <input id="email" type="email" class="input" placeholder="E-mail" />
-
-            <!-- Senha -->
-            <input id="password" type="password" class="input" placeholder="Senha" />
-
-            <!-- Código -->
-            <div id="codigoField" style="display:none;">
-                <input id="codigo" type="text" class="input" placeholder="Código recebido no e-mail" />
-            </div>
-
-            <!-- ENVIAR CÓDIGO -->
-            <button id="btnSendCode" class="botao-login" style="display:none;">
-                Enviar código
-            </button>
-
-            <!-- BOTÃO LOGIN/CADASTRO -->
-            <button id="loginBtn" class="botao-login">
-                Entrar
-            </button>
-
-            <!-- TOGGLE -->
-            <button id="showRegister" class="botao-toggle">
-                Cadastrar
-            </button>
+        <div class="link">
+            Não tem conta? <span onclick="alert('Cadastro será ativado aqui depois')">Cadastrar</span>
         </div>
     </div>
 
-    <!-- ===========================
-         PAYWALL
-    ============================ -->
-    <div id="paywallOverlay" class="overlay">
-        <div class="paywall-box">
-            <h2>Assine para continuar</h2>
-            <p class="pix-info">Chave Pix:</p>
-            <p id="pixKey" class="pix-chave"></p>
+    <script>
+        async function login() {
+            const email = document.getElementById("email").value.trim();
+            const senha = document.getElementById("senha").value.trim();
+            const erro = document.getElementById("erro");
 
-            <div id="planList" class="plan-list"></div>
+            erro.style.display = "none";
 
-            <button id="closePaywall" class="botao-cancelar">Fechar</button>
-        </div>
-    </div>
+            const r = await fetch("/api/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email, password: senha })
+            });
 
-    <!-- ===========================
-         PAINEL PRINCIPAL
-    ============================ -->
-    <div id="containerPrincipal" class="painel" style="display:none;">
+            const data = await r.json();
 
-        <header class="topbar">
-            <div>
-                <span id="nomeUsuario" class="user-nome"></span>
-                <span id="badgePlano" class="badge-plano"></span>
-            </div>
+            if (!data.success) {
+                erro.innerText = data.error || "Erro ao fazer login";
+                erro.style.display = "block";
+                return;
+            }
 
-            <button id="btnLogout" class="botao-logout">Sair</button>
-        </header>
+            // Redireciona para o painel principal
+            window.location.href = "/painel";
+        }
+    </script>
 
-        <!-- MENU -->
-        <nav class="menu">
-            <button class="menu-btn" onclick="mostrarAba('top3')">Top 3 do dia</button>
-            <button class="menu-btn" onclick="mostrarAba('multiplas')">Múltiplas</button>
-            <button class="menu-btn" onclick="mostrarAba('seguras')">Seguras</button>
-
-            <button id="btnAdminToggle" class="menu-btn admin-btn">Admin</button>
-        </nav>
-
-        <!-- CONTEÚDOS -->
-        <div class="conteudo">
-
-            <!-- TOP 3 -->
-            <div id="top3" class="aba">
-                <h2>Top 3 do dia</h2>
-                <div id="listaTop3" class="lista-jogos"></div>
-            </div>
-
-            <!-- MULTIPLAS -->
-            <div id="multiplas" class="aba" style="display:none;">
-                <h2>Múltiplas</h2>
-                <div id="listaMultiplas" class="lista-jogos"></div>
-            </div>
-
-            <!-- SEGURAS -->
-            <div id="seguras" class="aba" style="display:none;">
-                <h2>Seguras</h2>
-                <div id="listaSeguras" class="lista-jogos"></div>
-            </div>
-
-            <!-- ===== ADMIN ===== -->
-            <div id="adminPanel" class="admin-panel" style="display:none;">
-                <h2>Painel Admin</h2>
-                <div id="pendingList" class="pending-list"></div>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- SCRIPT -->
-    <script src="/static/app.js"></script>
 </body>
 </html>
