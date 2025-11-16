@@ -5,135 +5,149 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lanzaca IA - Cadastro</title>
 
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: #000;
-            font-family: Arial, sans-serif;
-            color: white;
-        }
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #000;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
 
-        .container {
-            width: 90%;
-            max-width: 420px;
-            margin: 80px auto;
-            padding: 30px;
-            background: #111;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid #00ff88;
-            box-shadow: 0 0 25px #00ff8866;
-        }
+.card {
+    background: #0c0c0c;
+    padding: 40px;
+    width: 380px;
+    border-radius: 15px;
+    border: 2px solid #00ff88;
+    box-shadow: 0 0 25px #00ff88;
+    text-align: center;
+}
 
-        h1 {
-            margin-bottom: 6px;
-            color: #00ff88;
-        }
+.logo {
+    font-size: 40px;
+    color: #00ff88;
+    margin-bottom: 10px;
+}
 
-        .sub {
-            margin-bottom: 25px;
-            color: #ccc;
-            font-size: 14px;
-        }
+h2 {
+    margin: 0;
+    font-size: 26px;
+    color: #00ff88;
+}
 
-        input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 12px;
-            border-radius: 6px;
-            border: none;
-            outline: none;
-            background: #e6ecff;
-            font-size: 15px;
-        }
+p.sub { 
+    margin-top: -5px;
+    font-size: 13px;
+    color: #b3b3b3;
+}
 
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #00ff88;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 8px;
-        }
+input {
+    width: 92%;
+    padding: 10px;
+    margin-top: 12px;
+    border-radius: 6px;
+    border: 1px solid #1f1f1f;
+    background: #1a1a1a;
+    color: white;
+    font-size: 14px;
+}
 
-        button:hover {
-            background: #00cc66;
-        }
+input:focus {
+    outline: none;
+    border: 1px solid #00ff88;
+    box-shadow: 0 0 8px #00ff88;
+}
 
-        .link {
-            margin-top: 12px;
-            font-size: 14px;
-        }
+button {
+    width: 100%;
+    padding: 14px;
+    background: #00ff88;
+    color: black;
+    border: none;
+    margin-top: 18px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+}
 
-        a {
-            color: #00ff88;
-            text-decoration: none;
-        }
+button:hover {
+    background: #00cc6a;
+}
 
-        .erro {
-            margin-top: 10px;
-            color: #ff4d4d;
-            display: none;
-        }
+.link {
+    margin-top: 12px;
+    font-size: 14px;
+}
 
-        .sucesso {
-            margin-top: 12px;
-            color: #00ff88;
-            display: none;
-        }
-    </style>
+.link a {
+    color: #00ff88;
+    text-decoration: none;
+}
+
+.error {
+    margin-top: 10px;
+    color: #ff5050;
+    font-size: 14px;
+}
+</style>
 </head>
+
 <body>
 
-<div class="container">
-    <h1>Lanzaca IA</h1>
-    <p class="sub">Crie sua conta e ganhe 30 dias grátis!</p>
+<div class="card">
+    <div class="logo">⚡</div>
+    <h2>Criar conta</h2>
+    <p class="sub">Acesso Premium por 30 dias grátis</p>
 
-    <input type="text" id="nome" placeholder="Nome completo">
-    <input type="text" id="email" placeholder="Email">
-    <input type="text" id="celular" placeholder="Celular">
-    <input type="password" id="senha" placeholder="Senha">
+    <input id="nome" placeholder="Nome completo">
+    <input id="celular" placeholder="Celular">
+    <input id="email" placeholder="Email">
+    <input id="senha" type="password" placeholder="Senha">
 
     <button onclick="registrar()">Cadastrar</button>
 
     <div class="link">
-        Já tem conta?
-        <a href="/">Entrar</a>
+        Já tem conta? <a href="/login">Entrar</a>
     </div>
 
-    <div id="erro" class="erro">Erro ao cadastrar</div>
-    <div id="sucesso" class="sucesso">Conta criada! Você já pode fazer login.</div>
+    <div id="erro" class="error" style="display:none;"></div>
 </div>
 
 <script>
 async function registrar() {
     const nome = document.getElementById("nome").value.trim();
-    const email = document.getElementById("email").value.trim();
     const celular = document.getElementById("celular").value.trim();
-    const password = document.getElementById("senha").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const senha = document.getElementById("senha").value.trim();
+    const erro = document.getElementById("erro");
 
-    const resp = await fetch("/api/register", {
+    erro.style.display = "none";
+
+    if (!nome || !celular || !email || !senha) {
+        erro.innerText = "Preencha todos os campos.";
+        erro.style.display = "block";
+        return;
+    }
+
+    const resp = await fetch("/api/cadastro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, email, celular, password })
+        body: JSON.stringify({ nome, celular, email, senha })
     });
 
     const data = await resp.json();
 
-    if (resp.status === 200) {
-        document.getElementById("sucesso").style.display = "block";
-        document.getElementById("erro").style.display = "none";
-
-        setTimeout(() => {
-            window.location.href = "/";
-        }, 1500);
-
+    if (resp.status === 201) {
+        alert("Conta criada com sucesso!");
+        window.location.href = "/login";
     } else {
-        document.getElementById("erro").innerText = data.error || "Erro ao cadastrar";
-        document.getElementById("erro").style.display = "block";
+        erro.innerText = data.message || "Erro ao cadastrar.";
+        erro.style.display = "block";
     }
 }
 </script>
