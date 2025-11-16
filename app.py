@@ -131,7 +131,8 @@ def api_login():
             expira = datetime.fromisoformat(trial_end.replace("Z", ""))
 
         if hoje > expira:
-            return jsonify({"error": "Acesso expirado"}), 403
+        return jsonify({"error": "expired","message": "Sua licença está vencida.",
+        "redirect": "/pagamento"}), 403
 
         return jsonify({"redirect": "/dashboard"}), 200
 
