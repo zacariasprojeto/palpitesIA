@@ -11,23 +11,29 @@ SUPABASE_KEY = "SUA_KEY_AQUI"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def usuario_logado():
-    return "email" in session
 
-def plano_valido(data):
-    if not data:
-        return False
-    hoje = datetime.now().date()
-    validade = datetime.fromisoformat(data).date()
-    return validade >= hoje
+# ===========================
+# FUNÇÕES
+# ===========================
 
-# ==============================
-# TELAS
-# ==============================
+def gerar_codigo():
+    return random.randint(100000, 999999)
 
-@app.route("/", methods=["GET"])
+def enviar_email_fake(email, codigo):
+    print(f"\n====== CODIGO DE CONFIRMAÇÃO ======")
+    print(f"Email: {email}")
+    print(f"Código: {codigo}")
+    print("===================================\n")
+
+
+# ===========================
+# ROTAS
+# ===========================
+
+@app.route("/")
 def index():
     return render_template("index.html")
+
 
 # LOGIN
 @app.route("/login", methods=["POST"])
@@ -42,17 +48,12 @@ def login():
 
     user = dados.data[0]
 
-    if not user.get("confirmado", False):
-        return render_template("index.html", erro="Confirme seu e-mail antes de entrar.")
-
     session["email"] = user["email"]
     session["nome"] = user["nome"]
-    session["validade"] = user["validade"]
-
-    if not plano_valido(user["validade"]):
-        return redirect("/pagamento")
 
     return redirect("/dashboard")
+
+
 
 # CADASTRO
 @app.route("/cadastro", methods=["GET", "POST"])
@@ -69,72 +70,72 @@ def cadastro():
     if len(existe.data) > 0:
         return render_template("cadastro.html", erro="Email já cadastrado")
 
-    validade = (datetime.now() + timedelta(days=30)).date().isoformat()
+    codigo = gerar_codigo()
 
-    supabase.table("users").insert({
+    # salva usuário temporário
+    supabase.table("pending_users").insert({
         "nome": nome,
         "celular": celular,
         "email": email,
-        "senha": senha,
-        "validade": validade,
-        "confirmado": False
+        "senha": senha
     }).execute()
 
-    # GERAR E SALVAR CÓDIGO
-    codigo = str(random.randint(100000, 999999))
-
+    # salva código
     supabase.table("confirm_codes").insert({
         "email": email,
         "codigo": codigo
     }).execute()
 
-    print(f"⚠ Código de confirmação: {codigo}")  # (mostrar no log)
+    enviar_email_fake(email, codigo)
 
-    return redirect("/confirmar?email=" + email)
+    return redirect(f"/confirmar?email={email}")
 
-# TELA PARA DIGITAR O CÓDIGO
-@app.route("/confirmar")
+
+# TELA PARA DIGITAR CÓDIGO
+@app.route("/confirmar", methods=["GET", "POST"])
 def confirmar():
     email = request.args.get("email")
-    return render_template("confirmar.html", email=email)
 
-# VALIDAR CÓDIGO
-@app.route("/validar_codigo", methods=["POST"])
-def validar_codigo():
+    if request.method == "GET":
+        return render_template("confirmar.html", email=email)
+
+    codigo_digitado = request.form.get("codigo")
     email = request.form.get("email")
-    codigo = request.form.get("codigo")
 
-    dados = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo).execute()
+    dados = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo_digitado).execute()
 
     if len(dados.data) == 0:
         return render_template("confirmar.html", email=email, erro="Código inválido")
 
-    supabase.table("users").update({"confirmado": True}).eq("email", email).execute()
+    # buscar usuario pendente
+    pend = supabase.table("pending_users").select("*").eq("email", email).execute()
+    user = pend.data[0]
 
-    # remover código usado
+    # mover para tabela final
+    supabase.table("users").insert(user).execute()
+
+    # remover temporários
+    supabase.table("pending_users").delete().eq("email", email).execute()
     supabase.table("confirm_codes").delete().eq("email", email).execute()
 
-    return render_template("confirmar.html", email=email, sucesso="Conta confirmada! Agora você pode entrar.")
+    return redirect("/")
+
 
 # DASHBOARD
 @app.route("/dashboard")
 def dashboard():
-    if not usuario_logado():
+    if "email" not in session:
         return redirect("/")
+
     return render_template("dashboard.html", nome=session["nome"])
 
-# PAGAMENTO
-@app.route("/pagamento")
-def pagamento():
-    if not usuario_logado():
-        return redirect("/")
-    return render_template("pagamento.html")
 
 # LOGOUT
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
