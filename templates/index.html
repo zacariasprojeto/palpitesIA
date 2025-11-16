@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lanzaca IA - Login</title>
+    <title>Lanzaca IA - Cadastro</title>
 
     <style>
         body {
@@ -45,11 +45,10 @@
             color: #b3b3b3;
         }
 
-        /* inputs tamanho padrão (um pouco menores) */
         input {
             width: 92%;
             padding: 10px;
-            margin-top: 10px;
+            margin-top: 12px;
             border-radius: 6px;
             border: 1px solid #1f1f1f;
             background: #1a1a1a;
@@ -101,70 +100,68 @@
 
     <div class="card">
         <div class="logo">⚡</div>
-        <h2>Lanzaca IA</h2>
-        <p class="sub">Sistema Premium de Análise de Apostas</p>
+        <h2>Criar Conta</h2>
+        <p class="sub">Acesso Premium por 30 dias grátis</p>
 
-        <input type="text" id="email" placeholder="Usuário">
-        <input type="password" id="senha" placeholder="Senha">
+        <input type="text" id="nome" placeholder="Nome completo">
+        <input type="text" id="celular" placeholder="Celular (DDD + número)">
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="senha" placeholder="Senha (mínimo 6 dígitos)">
 
-        <button onclick="login()">➜ Entrar no Sistema</button>
+        <button onclick="criarConta()">➜ Criar Conta</button>
 
         <div class="link">
-            Não tem conta? <a href="/cadastro">Cadastrar</a>
+            Já tem conta? <a href="/login">Entrar</a>
         </div>
 
         <div id="erro" class="error" style="display:none;"></div>
     </div>
 
-    <script>
-        async function login() {
-            const email = document.getElementById("email").value.trim();
-            const senha = document.getElementById("senha").value.trim();
-            const erroDiv = document.getElementById("erro");
-            erroDiv.style.display = "none";
-            erroDiv.textContent = "";
 
-            if (!email || !senha) {
-                erroDiv.textContent = "Preencha usuário e senha.";
-                erroDiv.style.display = "block";
-                return;
-            }
+<script>
+async function criarConta() {
+    const nome = document.getElementById("nome").value.trim();
+    const celular = document.getElementById("celular").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const senha = document.getElementById("senha").value.trim();
 
-            try {
-                const resp = await fetch("/api/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, senha })
-                });
+    const erroDiv = document.getElementById("erro");
+    erroDiv.style.display = "none";
 
-                const data = await resp.json().catch(() => ({}));
+    if (!nome || !celular || !email || !senha) {
+        erroDiv.textContent = "Preencha todos os campos.";
+        erroDiv.style.display = "block";
+        return;
+    }
 
-                if (resp.status === 200) {
-                    // Login OK -> vai para o dashboard (ou URL enviada pelo backend)
-                    window.location.href = data.redirect || "/dashboard";
-                } else if (resp.status === 403) {
-                    // Trial/plano vencido
-                    erroDiv.textContent =
-                        data.message ||
-                        "Seu período de acesso acabou. Realize o pagamento para continuar.";
-                    erroDiv.style.display = "block";
-                } else if (resp.status === 401) {
-                    // Credenciais inválidas
-                    erroDiv.textContent =
-                        data.message || "Credenciais inválidas.";
-                    erroDiv.style.display = "block";
-                } else {
-                    erroDiv.textContent =
-                        data.message || "Erro ao tentar fazer login.";
-                    erroDiv.style.display = "block";
-                }
-            } catch (e) {
-                console.error(e);
-                erroDiv.textContent = "Falha ao conectar com o servidor.";
-                erroDiv.style.display = "block";
-            }
+    if (senha.length < 6) {
+        erroDiv.textContent = "A senha deve ter no mínimo 6 dígitos.";
+        erroDiv.style.display = "block";
+        return;
+    }
+
+    try {
+        const resp = await fetch("/api/cadastro", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nome, celular, email, senha })
+        });
+
+        const data = await resp.json();
+
+        if (resp.status === 201) {
+            alert("Conta criada com sucesso! Faça login.");
+            window.location.href = "/login";
+        } else {
+            erroDiv.textContent = data.message || "Erro ao criar conta.";
+            erroDiv.style.display = "block";
         }
-    </script>
+    } catch (e) {
+        erroDiv.textContent = "Erro ao conectar com o servidor.";
+        erroDiv.style.display = "block";
+    }
+}
+</script>
 
 </body>
 </html>
