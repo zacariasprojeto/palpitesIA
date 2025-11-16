@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lanzaca IA - Cadastro</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 420px;
+            margin: 80px auto;
+            padding: 30px;
+            background: #111;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 25px #00ff8866;
+        }
+
+        h1 {
+            margin-bottom: 6px;
+            color: #00ff88;
+        }
+
+        .sub {
+            margin-bottom: 25px;
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            border: none;
+            outline: none;
+            background: #e6ecff;
+            font-size: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #00ff88;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        button:hover {
+            background: #00cc66;
+        }
+
+        .link {
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        a {
+            color: #00ff88;
+            text-decoration: none;
+        }
+
+        .erro {
+            margin-top: 10px;
+            color: #ff4d4d;
+            display: none;
+        }
+
+        .sucesso {
+            margin-top: 12px;
+            color: #00ff88;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Lanzaca IA</h1>
+    <p class="sub">Crie sua conta e ganhe 30 dias grátis!</p>
+
+    <input type="text" id="nome" placeholder="Nome completo">
+    <input type="text" id="email" placeholder="Email">
+    <input type="text" id="celular" placeholder="Celular">
+    <input type="password" id="senha" placeholder="Senha">
+
+    <button onclick="registrar()">Cadastrar</button>
+
+    <div class="link">
+        Já tem conta?
+        <a href="/">Entrar</a>
+    </div>
+
+    <div id="erro" class="erro">Erro ao cadastrar</div>
+    <div id="sucesso" class="sucesso">Conta criada! Você já pode fazer login.</div>
+</div>
+
+<script>
+async function registrar() {
+    const nome = document.getElementById("nome").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const celular = document.getElementById("celular").value.trim();
+    const password = document.getElementById("senha").value.trim();
+
+    const resp = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, email, celular, password })
+    });
+
+    const data = await resp.json();
+
+    if (resp.status === 200) {
+        document.getElementById("sucesso").style.display = "block";
+        document.getElementById("erro").style.display = "none";
+
+        setTimeout(() => {
+            window.location.href = "/";
+        }, 1500);
+
+    } else {
+        document.getElementById("erro").innerText = data.error || "Erro ao cadastrar";
+        document.getElementById("erro").style.display = "block";
+    }
+}
+</script>
+
+</body>
+</html>
