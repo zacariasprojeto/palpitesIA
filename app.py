@@ -14,10 +14,10 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "chave_default")
 # ==============================
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_ANON = os.getenv("SUPABASE_ANON_KEY")          # publishable
-SUPABASE_SERVICE = os.getenv("SUPABASE_SERVICE_KEY")    # secret_key
+SUPABASE_SERVICE = os.getenv("SUPABASE_SERVICE")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE)
+
 
 # ==============================
 # EMAIL CONFIG (BREVO SMTP)
