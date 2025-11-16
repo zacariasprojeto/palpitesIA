@@ -3,164 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lanzaca IA - Cadastro</title>
+    <title>Lanzaca IA - Login</title>
 
     <style>
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: #000;
+            background: #000000;
             color: white;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
         }
 
+        /* CARD DO LOGIN */
         .card {
+            width: 380px;
             background: #0c0c0c;
             padding: 40px;
-            width: 380px;
-            border-radius: 15px;
-            border: 2px solid #00ff88;
-            box-shadow: 0 0 25px #00ff88;
+            border-radius: 18px;
             text-align: center;
+
+            border: 2px solid #00ff88;
+            box-shadow: 0 0 35px #00ff88;
         }
 
         .logo {
-            font-size: 40px;
+            font-size: 45px;
+            margin-bottom: 8px;
             color: #00ff88;
-            margin-bottom: 10px;
         }
 
-        h2 {
+        h1 {
             margin: 0;
-            font-size: 26px;
+            font-size: 28px;
             color: #00ff88;
         }
 
         p.sub {
-            margin-top: -5px;
-            font-size: 13px;
+            margin-top: -2px;
             color: #b3b3b3;
+            font-size: 13px;
         }
 
+        /* INPUTS */
         input {
             width: 92%;
-            padding: 10px;
-            margin-top: 12px;
+            padding: 12px;
+            margin-top: 15px;
             border-radius: 6px;
-            border: 1px solid #1f1f1f;
             background: #1a1a1a;
+            border: 1px solid #1f1f1f;
             color: white;
-            font-size: 14px;
+            font-size: 15px;
         }
 
         input:focus {
             outline: none;
             border: 1px solid #00ff88;
-            box-shadow: 0 0 8px #00ff88;
+            box-shadow: 0 0 10px #00ff88;
         }
 
+        /* BOTÃO */
         button {
             width: 100%;
             padding: 14px;
-            background: #00ff88;
-            color: black;
-            border: none;
-            margin-top: 18px;
-            border-radius: 6px;
+            margin-top: 22px;
+            background-color: #00ff88;
+            color: #000;
             font-weight: bold;
             cursor: pointer;
             font-size: 16px;
+            border: none;
+            border-radius: 6px;
         }
 
         button:hover {
-            background: #00cc6a;
+            background-color: #00cc6a;
         }
 
+        /* LINK CADASTRO */
         .link {
-            margin-top: 12px;
+            margin-top: 14px;
+            display: block;
             font-size: 14px;
         }
 
         .link a {
             color: #00ff88;
             text-decoration: none;
+            font-weight: bold;
         }
 
+        /* ERRO */
         .error {
             margin-top: 10px;
             color: #ff5050;
             font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* ================================================ */
+        /*                   TELA LOADING                  */
+        /* ================================================ */
+        #telaCarregamento {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #000000, #0a0a0a);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+        }
+
+        /* CÍRCULO ANIMADO */
+        @keyframes giroCarregar {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
+
 <body>
 
-    <div class="card">
-        <div class="logo">⚡</div>
-        <h2>Criar Conta</h2>
-        <p class="sub">Acesso Premium por 30 dias grátis</p>
+    <!-- ========================= -->
+    <!--      TELA DO LOGIN       -->
+    <!-- ========================= -->
+    <div id="telaLogin" class="tela-login">
+        <div class="card">
+            <div class="logo">⚡</div>
+            <h1>Lanzaca IA</h1>
+            <p class="sub">Sistema Premium de Análise de Apostas</p>
 
-        <input type="text" id="nome" placeholder="Nome completo">
-        <input type="text" id="celular" placeholder="Celular (DDD + número)">
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="senha" placeholder="Senha (mínimo 6 dígitos)">
+            <input type="email" id="email" placeholder="E-mail">
+            <input type="password" id="senha" placeholder="Senha">
 
-        <button onclick="criarConta()">➜ Criar Conta</button>
+            <button onclick="login()">➜ Entrar no Sistema</button>
 
-        <div class="link">
-            Já tem conta? <a href="/login">Entrar</a>
+            <span class="link">
+                Não tem conta? <a href="/cadastro">Cadastrar</a>
+            </span>
+
+            <div id="erro" class="error" style="display:none;"></div>
         </div>
+    </div>
 
-        <div id="erro" class="error" style="display:none;"></div>
+    <!-- ========================= -->
+    <!--   TELA DE CARREGAMENTO    -->
+    <!-- ========================= -->
+    <div id="telaCarregamento">
+        <div style="text-align:center;">
+
+            <!-- ANIMAÇÃO -->
+            <div style="
+                width: 70px;
+                height: 70px;
+                border: 6px solid rgba(0,255,136,0.2);
+                border-top-color: #00ff88;
+                border-radius: 50%;
+                animation: giroCarregar 1s linear infinite;
+                margin: 0 auto 25px auto;
+            "></div>
+
+            <!-- LOGO -->
+            <h2 style="
+                color: #00ff88;
+                font-size: 28px;
+                margin-bottom: 8px;
+            ">⚡ Lanzaca iA</h2>
+
+            <!-- TEXTO -->
+            <p style="color:#888; font-size:16px;">
+                Carregando sistema premium...
+            </p>
+
+        </div>
     </div>
 
 
 <script>
-async function criarConta() {
-    const nome = document.getElementById("nome").value.trim();
-    const celular = document.getElementById("celular").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const senha = document.getElementById("senha").value.trim();
 
-    const erroDiv = document.getElementById("erro");
-    erroDiv.style.display = "none";
+    async function login() {
 
-    if (!nome || !celular || !email || !senha) {
-        erroDiv.textContent = "Preencha todos os campos.";
-        erroDiv.style.display = "block";
-        return;
-    }
+        const email = document.getElementById("email").value.trim();
+        const senha = document.getElementById("senha").value.trim();
+        const erroDiv = document.getElementById("erro");
 
-    if (senha.length < 6) {
-        erroDiv.textContent = "A senha deve ter no mínimo 6 dígitos.";
-        erroDiv.style.display = "block";
-        return;
-    }
+        erroDiv.style.display = "none";
 
-    try {
-        const resp = await fetch("/api/cadastro", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ nome, celular, email, senha })
-        });
+        if (!email || !senha) {
+            erroDiv.textContent = "Preencha todos os campos.";
+            erroDiv.style.display = "block";
+            return;
+        }
 
-        const data = await resp.json();
+        try {
+            const resp = await fetch("/api/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, senha })
+            });
 
-        if (resp.status === 201) {
-            alert("Conta criada com sucesso! Faça login.");
-            window.location.href = "/login";
-        } else {
-            erroDiv.textContent = data.message || "Erro ao criar conta.";
+            const data = await resp.json().catch(() => ({}));
+
+            if (resp.status === 200) {
+
+                // 🔥 APARECER A TELA DE LOADING
+                document.getElementById("telaLogin").style.display = "none";
+                document.getElementById("telaCarregamento").style.display = "flex";
+
+                // REDIRECIONAR PARA PALPITES
+                setTimeout(() => {
+                    window.location.href = "/palpites";
+                }, 2500);
+
+            } else if (resp.status === 403) {
+                erroDiv.textContent = "Seu plano expirou.";
+                erroDiv.style.display = "block";
+            }
+            else if (resp.status === 401) {
+                erroDiv.textContent = "Credenciais inválidas.";
+                erroDiv.style.display = "block";
+            }
+            else {
+                erroDiv.textContent = "Erro no login.";
+                erroDiv.style.display = "block";
+            }
+
+        } catch (e) {
+            erroDiv.textContent = "Falha ao conectar ao servidor.";
             erroDiv.style.display = "block";
         }
-    } catch (e) {
-        erroDiv.textContent = "Erro ao conectar com o servidor.";
-        erroDiv.style.display = "block";
     }
-}
+
 </script>
 
 </body>
