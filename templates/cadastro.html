@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ Criar Conta - Lanzaca IA</title>
+    <title>Criar Conta - Lanzaca IA</title>
 
     <style>
         body {
@@ -30,7 +30,7 @@
         .logo {
             font-size: 45px;
             color: #00ff88;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         h2 {
@@ -41,8 +41,9 @@
 
         p.sub {
             color: #b3b3b3;
-            font-size: 13px;
+            font-size: 14px;
             margin-bottom: 25px;
+            margin-top: 5px;
         }
 
         input {
@@ -50,7 +51,7 @@
             padding: 12px;
             margin-top: 12px;
             border-radius: 6px;
-            border: 1px solid #1f1f1f;
+            border: none;
             background: #1a1a1a;
             color: #fff;
             font-size: 14px;
@@ -69,9 +70,10 @@
             border: none;
             border-radius: 6px;
             color: #000;
-            font-size: 16px;
+            font-size: 17px;
             margin-top: 20px;
             cursor: pointer;
+            font-weight: bold;
         }
 
         button:hover {
@@ -86,6 +88,7 @@
         .link a {
             color: #00ff88;
             text-decoration: none;
+            font-weight: bold;
         }
 
         .error {
@@ -100,17 +103,18 @@
 
     <div class="card">
         <div class="logo">⚡</div>
+
         <h2>Criar conta</h2>
         <p class="sub">Acesso Premium por 30 dias grátis</p>
 
-        <form method="POST" action="/cadastro">
+        <form method="POST" action="/cadastro" autocomplete="off">
 
-            <input type="text" name="nome" placeholder="Nome completo" required>
-            <input type="text" name="celular" placeholder="Celular" required>
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="senha" placeholder="Senha" required>
+            <input type="text" name="nome" placeholder="Nome completo" autocomplete="off" required>
+            <input type="text" name="celular" placeholder="Celular" autocomplete="off" required>
+            <input type="email" name="email" placeholder="Email" autocomplete="off" required>
+            <input type="password" name="senha" placeholder="Senha" autocomplete="new-password" required>
 
-            <button type="submit">➜ Cadastrar</button>
+            <button type="submit">Cadastrar</button>
 
         </form>
 
