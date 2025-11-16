@@ -1,313 +1,79 @@
-let isRegisterMode = false;
-let lastLoginUser = null;
+function gerarPayloadPix(chave, valor, descricao) {
+  const pad = (str) => String(str.length).padStart(2, "0") + str;
 
-// ---------------- TOAST ----------------
-function showToast(msg, type = "info") {
-  const toast = document.getElementById("toast");
-  if (!toast) return;
-  toast.textContent = msg;
-  toast.className = "toast " + type;
-  toast.style.opacity = "1";
-  setTimeout(() => {
-    toast.style.opacity = "0";
-  }, 3000);
-}
+  const gui = "BR.GOV.BCB.PIX";
+  const guiField = "00" + pad(gui);
 
-// ---------------- AUTH MSG ----------------
-function setAuthMessage(msg, type = "info") {
-  const el = document.getElementById("authMsg");
-  if (!el) return;
-  el.textContent = msg || "";
-  el.className = "auth-msg " + type;
-}
+  const chaveField = "01" + pad(chave);
 
-// ---------------- MODO LOGIN/CADASTRO ----------------
-function toggleMode() {
-  const btnLogin = document.getElementById("loginBtn");
-  const btnToggle = document.getElementById("showRegister");
+  const descricaoField = "02" + pad(descricao);
 
-  isRegisterMode = !isRegisterMode;
+  const merchantAccountInfo = "26" + pad(guiField + chaveField + descricaoField);
 
-  if (isRegisterMode) {
-    btnLogin.textContent = "Enviar cadastro";
-    btnToggle.textContent = "Já tenho conta";
-    setAuthMessage("Preencha email e senha para solicitar acesso.");
-  } else {
-    btnLogin.textContent = "Entrar";
-    btnToggle.textContent = "Cadastrar";
-    setAuthMessage("");
-  }
-}
+  const merchantCategoryCode = "52040000";
+  const transactionCurrency = "5303986";
 
-// ---------------- UTIL ----------------
-function diasRestantes(dateStr) {
-  if (!dateStr) return 0;
-  const d = new Date(dateStr);
-  const hoje = new Date();
-  const diffMs = d.getTime() - hoje.getTime();
-  return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-}
+  const transactionAmount = "54" + pad(valor);
 
-function atualizarBadgePlano(user) {
-  const badge = document.getElementById("badgePlano");
-  if (!badge || !user) return;
+  const countryCode = "5802BR";
+  const name = "59" + pad("ZACARIAS IA");
 
-  if (user.is_admin) {
-    badge.textContent = "Admin (acesso ilimitado)";
-    badge.className = "badge-plano badge-admin";
-    return;
-  }
+  const city = "6008BRASILIA";
 
-  const plan = user.plan || "trial";
+  const additionalData = "62070503***";
 
-  if (plan === "trial") {
-    const dias = diasRestantes(user.trial_end);
-    badge.textContent = `Teste grátis • ${dias} dia(s) restante(s)`;
-    badge.className = "badge-plano badge-trial";
-  } else if (plan === "paid") {
-    const dias = diasRestantes(user.paid_until);
-    badge.textContent = `Plano ativo • ${dias} dia(s) restante(s)`;
-    badge.className = "badge-plano badge-paid";
-  } else {
-    badge.textContent = "Plano indefinido";
-    badge.className = "badge-plano";
-  }
-}
+  let payload =
+    "000201" +
+    merchantAccountInfo +
+    merchantCategoryCode +
+    transactionCurrency +
+    transactionAmount +
+    countryCode +
+    name +
+    city +
+    additionalData +
+    "6304";
 
-// ---------------- PAYWALL ----------------
-function preencherPaywall(data) {
-  const paywall = document.getElementById("paywallOverlay");
-  const planList = document.getElementById("planList");
-  const pixKey = document.getElementById("pixKey");
-  const trialInfo = document.getElementById("trialInfo");
-
-  if (!paywall || !planList || !pixKey || !trialInfo) return;
-
-  planList.innerHTML = "";
-  (data.plans || []).forEach((p) => {
-    const card = document.createElement("div");
-    card.className = "paywall-plan-card";
-    card.innerHTML = `
-      <div class="plan-label">${p.label}</div>
-      <div class="plan-price">R$ ${p.price}</div>
-      <div class="plan-days">${p.days} dias de acesso</div>
-    `;
-    planList.appendChild(card);
-  });
-
-  pixKey.textContent = data.pix_key || "SUA_CHAVE_PIX_AQUI";
-
-  if (data.user && data.user.trial_end) {
-    const dias = diasRestantes(data.user.trial_end);
-    trialInfo.textContent =
-      "Seu teste terminou ou termina em breve. Restavam " + dias + " dia(s).";
-  } else {
-    trialInfo.textContent = "";
-  }
-
-  paywall.style.display = "flex";
-}
-
-function fecharPaywall() {
-  const paywall = document.getElementById("paywallOverlay");
-  if (paywall) paywall.style.display = "none";
-}
-
-// ---------------- API CALLS ----------------
-async function doLogin(email, password) {
-  try {
-    const resp = await fetch("/api/login", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await resp.json();
-
-    if (data.status === "ok") {
-      lastLoginUser = data.user;
-      setAuthMessage("");
-      showToast("Login autorizado!", "success");
-      entrarDashboard(data.user);
-    } else if (data.status === "blocked") {
-      lastLoginUser = data.user;
-      setAuthMessage(data.msg || "Acesso bloqueado.", "error");
-      preencherPaywall(data);
-    } else {
-      setAuthMessage(data.msg || "Erro ao fazer login.", "error");
+  function crc16(data) {
+    let crc = 0xffff;
+    for (let i = 0; i < data.length; i++) {
+      crc ^= data.charCodeAt(i) << 8;
+      for (let j = 0; j < 8; j++) {
+        crc = crc & 0x8000 ? (crc << 1) ^ 0x1021 : crc << 1;
+      }
     }
-  } catch (e) {
-    console.error(e);
-    setAuthMessage("Falha ao conectar com o servidor.", "error");
+    return ((crc & 0xffff).toString(16)).toUpperCase().padStart(4, "0");
   }
+
+  payload += crc16(payload);
+  return payload;
 }
 
-async function doRegister(email, password) {
-  try {
-    const resp = await fetch("/api/register", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ email, password }),
-    });
+function gerarQrPlano(plano) {
+  const chave = "9aacbabc-39ad-4602-b73e-955703ec502e";
 
-    const data = await resp.json();
-    if (data.status === "ok") {
-      setAuthMessage(data.msg, "success");
-      showToast("Cadastro enviado! Aguarde aprovação.", "success");
-    } else {
-      setAuthMessage(data.msg || "Erro ao enviar cadastro.", "error");
-    }
-  } catch (e) {
-    console.error(e);
-    setAuthMessage("Falha ao conectar com o servidor.", "error");
-  }
+  const valores = {
+    "Mensal": "49.90",
+    "Trimestral": "129.90",
+    "Semestral": "219.90"
+  };
+
+  const descricao = "Assinatura " + plano;
+
+  const payload = gerarPayloadPix(chave, valores[plano], descricao);
+
+  const qrImg = document.getElementById("qrCodePix");
+  qrImg.src = "https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=" + encodeURIComponent(payload);
+
+  document.getElementById("pixPayloadText").textContent = payload;
 }
 
-async function doLogout() {
-  try {
-    await fetch("/api/logout", { method: "POST" });
-  } catch (e) {
-    console.error(e);
-  }
-  document.getElementById("containerPrincipal").style.display = "none";
-  document.getElementById("authContainer").style.display = "flex";
-  setAuthMessage("Você saiu da conta.");
-}
-
-// -------- ADMIN PENDENTES --------
-async function carregarPendentes() {
-  const list = document.getElementById("pendingList");
-  if (!list) return;
-
-  list.textContent = "Carregando...";
-
-  try {
-    const resp = await fetch("/api/pending");
-    const data = await resp.json();
-
-    if (data.status !== "ok") {
-      list.textContent = data.msg || "Erro ao carregar pendentes.";
-      return;
-    }
-
-    const pend = data.pending || [];
-    if (!pend.length) {
-      list.textContent = "Nenhum cadastro pendente.";
-      return;
-    }
-
-    list.innerHTML = "";
-    pend.forEach((u) => {
-      const row = document.createElement("div");
-      row.className = "pending-row";
-      row.innerHTML = `
-        <div>
-          <strong>${u.email}</strong><br/>
-          <span class="pending-date">${new Date(u.created_at).toLocaleString()}</span>
-        </div>
-        <button class="pending-approve">Aprovar</button>
-      `;
-      row.querySelector(".pending-approve").addEventListener("click", () => {
-        aprovarUsuario(u.email);
-      });
-      list.appendChild(row);
-    });
-  } catch (e) {
-    console.error(e);
-    list.textContent = "Erro ao carregar pendentes.";
-  }
-}
-
-async function aprovarUsuario(email) {
-  if (!confirm(`Aprovar acesso para ${email}?`)) return;
-
-  try {
-    const resp = await fetch("/api/approve", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ email }),
-    });
-    const data = await resp.json();
-    if (data.status === "ok") {
-      showToast("Usuário aprovado com 30 dias de teste.", "success");
-      carregarPendentes();
-    } else {
-      showToast(data.msg || "Erro ao aprovar usuário.", "error");
-    }
-  } catch (e) {
-    console.error(e);
-    showToast("Falha ao comunicar com o servidor.", "error");
-  }
-}
-
-// ---------------- ENTRAR DASHBOARD ----------------
-function entrarDashboard(user) {
-  const auth = document.getElementById("authContainer");
-  const main = document.getElementById("containerPrincipal");
-  const nome = document.getElementById("nomeUsuario");
-
-  if (auth) auth.style.display = "none";
-  if (main) main.style.display = "block";
-  if (nome && user) nome.textContent = "Olá, " + (user.email || "usuário") + "!";
-
-  atualizarBadgePlano(user);
-
-  // Aqui depois você liga suas funções de análise/atualização dos cards
-}
-
-// ---------------- INIT ----------------
-document.addEventListener("DOMContentLoaded", () => {
-  const emailInput = document.getElementById("email");
-  const passInput = document.getElementById("password");
-  const btnLogin = document.getElementById("loginBtn");
-  const btnToggle = document.getElementById("showRegister");
-  const btnLogout = document.getElementById("btnLogout");
-  const btnAdminToggle = document.getElementById("btnAdminToggle");
-  const adminPanel = document.getElementById("adminPanel");
-
-  const closePaywall = document.getElementById("closePaywall");
-  const btnJaPaguei = document.getElementById("btnJaPaguei");
-
-  btnLogin.addEventListener("click", () => {
-    const email = emailInput.value.trim();
-    const password = passInput.value.trim();
-    if (!email || !password) {
-      setAuthMessage("Preencha email e senha.", "error");
-      return;
-    }
-    if (isRegisterMode) {
-      doRegister(email, password);
-    } else {
-      doLogin(email, password);
-    }
-  });
-
-  btnToggle.addEventListener("click", toggleMode);
-
-  passInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") btnLogin.click();
-  });
-
-  btnLogout.addEventListener("click", () => {
-    fecharPaywall();
-    doLogout();
-  });
-
-  btnAdminToggle.addEventListener("click", () => {
-    if (adminPanel.style.display === "block") {
-      adminPanel.style.display = "none";
-    } else {
-      adminPanel.style.display = "block";
-      carregarPendentes();
-    }
-  });
-
-  if (closePaywall) {
-    closePaywall.addEventListener("click", fecharPaywall);
-  }
-  if (btnJaPaguei) {
-    btnJaPaguei.addEventListener("click", () => {
-      showToast("Envie o comprovante para o admin liberar seu acesso.", "info");
-    });
+// ==============================
+// PAYWALL RECEBE O PLANO CLICADO
+// ==============================
+document.addEventListener("click", (ev) => {
+  if (ev.target.classList.contains("paywall-plan-card")) {
+    const plano = ev.target.dataset.plano;
+    gerarQrPlano(plano);
   }
 });
