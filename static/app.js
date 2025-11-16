@@ -1,5 +1,6 @@
 let isRegisterMode = false;
 let lastLoginUser = null;
+let codigoEnviado = false;
 
 // ==============================
 // TOAST
@@ -16,7 +17,7 @@ function showToast(msg, type = "info") {
 }
 
 // ==============================
-// AUTH MESSAGE
+// AUTH MESSAGES
 // ==============================
 function setAuthMessage(msg, type = "info") {
   const el = document.getElementById("authMsg");
@@ -26,33 +27,39 @@ function setAuthMessage(msg, type = "info") {
 }
 
 // ==============================
-// LOGIN / REGISTER MODE
+// MODO LOGIN / REGISTER
 // ==============================
 function toggleMode() {
   const btnLogin = document.getElementById("loginBtn");
   const btnToggle = document.getElementById("showRegister");
-  const nameGroup = document.getElementById("groupName");
-  const phoneGroup = document.getElementById("groupPhone");
+  const nomeField = document.getElementById("nomeField");
+  const celField = document.getElementById("celularField");
+  const codigoField = document.getElementById("codigoField");
+  const sendCodeBtn = document.getElementById("btnSendCode");
 
   isRegisterMode = !isRegisterMode;
 
   if (isRegisterMode) {
-    if (nameGroup) nameGroup.style.display = "block";
-    if (phoneGroup) phoneGroup.style.display = "block";
-    btnLogin.textContent = "Enviar cadastro";
+    btnLogin.textContent = "Concluir Cadastro";
     btnToggle.textContent = "Já tenho conta";
-    setAuthMessage("Preencha nome, celular, email e senha para solicitar acesso.");
+    nomeField.style.display = "block";
+    celField.style.display = "block";
+    codigoField.style.display = "block";
+    sendCodeBtn.style.display = "block";
+    setAuthMessage("Preencha seus dados e confirme o código enviado ao e-mail.");
   } else {
-    if (nameGroup) nameGroup.style.display = "none";
-    if (phoneGroup) phoneGroup.style.display = "none";
     btnLogin.textContent = "Entrar";
     btnToggle.textContent = "Cadastrar";
+    nomeField.style.display = "none";
+    celField.style.display = "none";
+    codigoField.style.display = "none";
+    sendCodeBtn.style.display = "none";
     setAuthMessage("");
   }
 }
 
 // ==============================
-// DIAS RESTANTES
+// CALCULAR DIAS RESTANTES
 // ==============================
 function diasRestantes(dateStr) {
   if (!dateStr) return 0;
@@ -63,317 +70,223 @@ function diasRestantes(dateStr) {
 }
 
 // ==============================
-// BADGE DE PLANO
+// BADGE PLANO
 // ==============================
 function atualizarBadgePlano(user) {
   const badge = document.getElementById("badgePlano");
   if (!badge || !user) return;
 
   if (user.is_admin) {
-    badge.textContent = "Admin (acesso ilimitado)";
+    badge.textContent = "Admin • Acesso infinito";
     badge.className = "badge-plano badge-admin";
     return;
   }
 
-  const plan = user.plan || "trial";
+  const plan = user.plano || "trial";
 
   if (plan === "trial") {
-    const dias = diasRestantes(user.trial_end);
-    badge.textContent = `Teste grátis • ${dias} dia(s) restante(s)`;
+    const dias = diasRestantes(user.trial_ate);
+    badge.textContent = `Teste grátis • ${dias} dias restantes`;
     badge.className = "badge-plano badge-trial";
-  } else if (plan === "paid") {
-    const dias = diasRestantes(user.paid_until);
-    badge.textContent = `Plano ativo • ${dias} dia(s) restante(s)`;
-    badge.className = "badge-plano badge-paid";
   } else {
-    badge.textContent = "Plano indefinido";
-    badge.className = "badge-plano";
+    badge.textContent = `${plan.toUpperCase()} ativo`;
+    badge.className = "badge-plano badge-paid";
   }
-}
-
-// ==============================
-// PIX / BRCode
-// ==============================
-
-// Chave PIX fixa do usuário
-const CHAVE_PIX = "9aacbabc-39ad-4602-b73e-955703ec502e";
-
-// Monta campo TLV (ID + tamanho + valor)
-function tlv(id, value) {
-  const len = String(value.length).padStart(2, "0");
-  return id + len + value;
-}
-
-// Calcula CRC16-CCITT para o BRCode
-function crc16(str) {
-  let crc = 0xffff;
-  for (let i = 0; i < str.length; i++) {
-    crc ^= str.charCodeAt(i) << 8;
-    for (let j = 0; j < 8; j++) {
-      if (crc & 0x8000) {
-        crc = (crc << 1) ^ 0x1021;
-      } else {
-        crc = crc << 1;
-      }
-      crc &= 0xffff;
-    }
-  }
-  return crc.toString(16).toUpperCase().padStart(4, "0");
-}
-
-// Gera payload BRCode PIX com valor
-function gerarPayloadPIX(valor, descricao) {
-  const valorStr = valor.toFixed(2);
-
-  const merchantAccountInfo =
-    tlv("00", "BR.GOV.BCB.PIX") +
-    tlv("01", CHAVE_PIX);
-
-  const additionalDataField =
-    tlv("05", "***"); // txid simples
-
-  let payload =
-    tlv("00", "01") +                // Payload Format Indicator
-    tlv("01", "12") +                // Point of Initiation Method (dinâmico)
-    tlv("26", merchantAccountInfo) + // Merchant Account Information
-    tlv("52", "0000") +              // Merchant Category Code
-    tlv("53", "986") +               // Moeda (BRL)
-    tlv("54", valorStr) +            // Valor
-    tlv("58", "BR") +                // País
-    tlv("59", "ZACARIAS APRIGIO") +  // Nome (max 25 chars)
-    tlv("60", "RIO DE JANEIRO") +    // Cidade
-    tlv("62", additionalDataField);  // Additional Data
-
-  payload += "6304";                 // ID do CRC
-
-  const crc = crc16(payload);
-  payload += crc;
-
-  return payload;
-}
-
-// Gera URL do QR Code usando API externa
-function gerarQRCodePlano(valor, nomePlano) {
-  const payload = gerarPayloadPIX(valor, nomePlano);
-  const qrUrl =
-    "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" +
-    encodeURIComponent(payload);
-
-  return qrUrl;
 }
 
 // ==============================
 // PAYWALL
 // ==============================
-function preencherPaywall(data) {
+async function abrirPaywall() {
+  const resp = await fetch("/api/paywall");
+  const data = await resp.json();
+
   const paywall = document.getElementById("paywallOverlay");
   const planList = document.getElementById("planList");
   const pixKey = document.getElementById("pixKey");
-  const trialInfo = document.getElementById("trialInfo");
 
-  if (!paywall || !planList || !pixKey || !trialInfo) return;
-
-  // mostra a chave PIX fixa
-  pixKey.textContent = CHAVE_PIX;
-
+  pixKey.textContent = data.pix;
   planList.innerHTML = "";
 
-  // Planos fixos
-  const planos = [
-    { label: "Mensal", price: 49.9, days: 30 },
-    { label: "Trimestral", price: 129.9, days: 90 },
-    { label: "Semestral", price: 219.9, days: 180 },
-  ];
-
-  planos.forEach((p) => {
-    const qr = gerarQRCodePlano(p.price, p.label);
+  data.planos.forEach((p) => {
+    const payload =
+      "00020101021226580014BR.GOV.BCB.PIX01" +
+      "0325" + // tamanho + chave (pode ajustar)
+      data.pix +
+      "52040000" +
+      "5303986" +
+      "54" +
+      p.price.toFixed(2).replace(".", "") +
+      "5802BR" +
+      "5913Lanzaca IA" +
+      "6009Sao Paulo" +
+      "62070503***";
 
     const card = document.createElement("div");
     card.className = "paywall-plan-card";
+
     card.innerHTML = `
       <div class="plan-label">${p.label}</div>
-      <div class="plan-price">R$ ${p.price.toFixed(2)}</div>
-      <div class="plan-days">${p.days} dias de acesso</div>
-      <img src="${qr}" class="qr-pix-img" alt="QR PIX"/>
-      <button class="botao-login btn-pix-copiar" data-valor="${p.price}">
+      <div class="plan-price">R$ ${p.price}</div>
+      <div class="plan-days">${p.dias} dias de acesso</div>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+        payload
+      )}" class="qr-pix-img">
+
+      <button class="botao-login btn-pix-copiar">
         Copiar código PIX
       </button>
     `;
+
+    card.querySelector(".btn-pix-copiar").addEventListener("click", () => {
+      navigator.clipboard.writeText(payload);
+      showToast("Código PIX copiado!", "success");
+    });
+
     planList.appendChild(card);
   });
-
-  // Botão "copiar código"
-  document.querySelectorAll(".btn-pix-copiar").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const valor = parseFloat(btn.dataset.valor);
-      const codigo = gerarPayloadPIX(valor, "Plano");
-      navigator.clipboard
-        .writeText(codigo)
-        .then(() => showToast("Código PIX copiado!", "success"))
-        .catch(() => showToast("Não foi possível copiar o código.", "error"));
-    });
-  });
-
-  // Informação de trial (se o backend mandar algo)
-  if (data && data.user && data.user.trial_end) {
-    const dias = diasRestantes(data.user.trial_end);
-    trialInfo.textContent =
-      "Seu teste terminou ou termina em breve. Restavam " + dias + " dia(s).";
-  } else {
-    trialInfo.textContent = "";
-  }
 
   paywall.style.display = "flex";
 }
 
 function fecharPaywall() {
-  const paywall = document.getElementById("paywallOverlay");
-  if (paywall) paywall.style.display = "none";
+  const pw = document.getElementById("paywallOverlay");
+  pw.style.display = "none";
 }
 
 // ==============================
 // LOGIN
 // ==============================
-async function doLogin(email, password) {
+async function doLogin(email, senha) {
   try {
     const resp = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, senha }),
     });
 
     const data = await resp.json();
 
     if (data.status === "ok") {
-      lastLoginUser = data.user;
-      setAuthMessage("");
-      showToast("Login autorizado!", "success");
+      localStorage.setItem("usuario", JSON.stringify(data.user));
       entrarDashboard(data.user);
+      showToast("Login autorizado!", "success");
     } else if (data.status === "blocked") {
-      lastLoginUser = data.user;
-      setAuthMessage(data.msg || "Acesso bloqueado.", "error");
-      preencherPaywall(data);
+      showToast("Seu acesso expirou.", "error");
+      abrirPaywall();
     } else {
-      setAuthMessage(data.msg || "Erro ao fazer login.", "error");
+      showToast("Credenciais inválidas.", "error");
     }
   } catch (e) {
     console.error(e);
-    setAuthMessage("Falha ao conectar com o servidor.", "error");
+    showToast("Erro ao conectar com servidor.", "error");
   }
 }
 
 // ==============================
-// REGISTRO
+// CADASTRO - ENVIAR CÓDIGO
 // ==============================
-async function doRegister(name, phone, email, password) {
+async function enviarCodigo(email) {
   try {
-    const resp = await fetch("/api/register", {
+    const resp = await fetch("/api/send_code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone, email, password }),
+      body: JSON.stringify({ email }),
     });
 
     const data = await resp.json();
-    if (data.status === "ok") {
-      setAuthMessage(data.msg, "success");
-      showToast("Cadastro enviado! Aguarde aprovação.", "success");
-    } else {
-      setAuthMessage(data.msg || "Erro ao enviar cadastro.", "error");
+
+    if (data.error) {
+      showToast(data.error, "error");
+      return;
     }
+
+    showToast("Código enviado ao e-mail!", "success");
+    codigoEnviado = true;
   } catch (e) {
     console.error(e);
-    setAuthMessage("Falha ao conectar com o servidor.", "error");
+    showToast("Erro ao enviar código.", "error");
   }
 }
 
 // ==============================
-// LOGOUT
+// CADASTRO - VALIDAR CÓDIGO
 // ==============================
-async function doLogout() {
+async function validarCadastro(obj) {
   try {
-    await fetch("/api/logout", { method: "POST" });
+    const resp = await fetch("/api/verify_code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(obj),
+    });
+
+    const data = await resp.json();
+
+    if (data.error) {
+      showToast(data.error, "error");
+      return;
+    }
+
+    showToast("Cadastro concluído! Agora faça login.", "success");
+    toggleMode();
   } catch (e) {
     console.error(e);
+    showToast("Falha ao criar conta.", "error");
   }
-  document.getElementById("containerPrincipal").style.display = "none";
-  document.getElementById("authContainer").style.display = "flex";
-  setAuthMessage("Você saiu da conta.");
 }
 
 // ==============================
-// ADMIN LISTAR PENDENTES
+// ADMIN - LISTAR PENDENTES
 // ==============================
 async function carregarPendentes() {
   const list = document.getElementById("pendingList");
-  if (!list) return;
-
   list.textContent = "Carregando...";
 
   try {
     const resp = await fetch("/api/pending");
     const data = await resp.json();
 
-    if (data.status !== "ok") {
-      list.textContent = data.msg || "Erro ao carregar pendentes.";
-      return;
-    }
-
-    const pend = data.pending || [];
-    if (!pend.length) {
-      list.textContent = "Nenhum cadastro pendente.";
+    if (!data.pending.length) {
+      list.textContent = "Nenhum usuário pendente.";
       return;
     }
 
     list.innerHTML = "";
-    pend.forEach((u) => {
+
+    data.pending.forEach((u) => {
       const row = document.createElement("div");
       row.className = "pending-row";
+
       row.innerHTML = `
         <div>
-          <strong>${u.email}</strong><br/>
-          <span>${u.name || ""} • ${u.phone || ""}</span><br/>
-          <span class="pending-date">${new Date(
-            u.created_at
-          ).toLocaleString()}</span>
+          <strong>${u.nome}</strong><br>
+          <span>${u.email}</span><br>
+          <span>${u.celular}</span>
         </div>
         <button class="pending-approve">Aprovar</button>
       `;
-      row
-        .querySelector(".pending-approve")
-        .addEventListener("click", () => {
-          aprovarUsuario(u.email);
-        });
+
+      row.querySelector(".pending-approve").addEventListener("click", () => {
+        aprovarUsuario(u.email);
+      });
+
       list.appendChild(row);
     });
   } catch (e) {
     console.error(e);
-    list.textContent = "Erro ao carregar pendentes.";
+    showToast("Erro ao carregar pendentes.", "error");
   }
 }
 
-// ==============================
-// APROVAR
-// ==============================
 async function aprovarUsuario(email) {
-  if (!confirm(`Aprovar acesso para ${email}?`)) return;
+  await fetch("/api/approve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
 
-  try {
-    const resp = await fetch("/api/approve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    const data = await resp.json();
-    if (data.status === "ok") {
-      showToast("Usuário aprovado com 30 dias de teste.", "success");
-      carregarPendentes();
-    } else {
-      showToast(data.msg || "Erro ao aprovar usuário.", "error");
-    }
-  } catch (e) {
-    console.error(e);
-    showToast("Falha ao comunicar com o servidor.", "error");
-  }
+  showToast("Usuário aprovado!", "success");
+  carregarPendentes();
 }
 
 // ==============================
@@ -383,79 +296,46 @@ function entrarDashboard(user) {
   document.getElementById("authContainer").style.display = "none";
   document.getElementById("containerPrincipal").style.display = "block";
 
-  const nome = document.getElementById("nomeUsuario");
-  if (nome && user) {
-    const nomeText = user.name || user.email || "usuário";
-    nome.textContent = "Olá, " + nomeText;
-  }
-
+  document.getElementById("nomeUsuario").textContent = `Olá, ${user.nome}`;
   atualizarBadgePlano(user);
 }
 
 // ==============================
-// INIT
+// INÍCIO
 // ==============================
 document.addEventListener("DOMContentLoaded", () => {
-  const nameInput = document.getElementById("name");
-  const phoneInput = document.getElementById("phone");
   const emailInput = document.getElementById("email");
   const passInput = document.getElementById("password");
-  const btnLogin = document.getElementById("loginBtn");
-  const btnToggle = document.getElementById("showRegister");
-  const btnLogout = document.getElementById("btnLogout");
-  const btnAdminToggle = document.getElementById("btnAdminToggle");
-  const adminPanel = document.getElementById("adminPanel");
+  const nomeInput = document.getElementById("nome");
+  const celInput = document.getElementById("celular");
+  const codigoInput = document.getElementById("codigo");
 
-  const closePaywall = document.getElementById("closePaywall");
-  const btnJaPaguei = document.getElementById("btnJaPaguei");
-
-  btnLogin.addEventListener("click", () => {
-    const name = nameInput ? nameInput.value.trim() : "";
-    const phone = phoneInput ? phoneInput.value.trim() : "";
-    const email = emailInput.value.trim();
-    const password = passInput.value.trim();
-
+  document.getElementById("loginBtn").addEventListener("click", () => {
     if (isRegisterMode) {
-      if (!name || !phone || !email || !password) {
-        setAuthMessage("Preencha nome, celular, email e senha.", "error");
-        return;
-      }
-      doRegister(name, phone, email, password);
+      validarCadastro({
+        email: emailInput.value,
+        senha: passInput.value,
+        nome: nomeInput.value,
+        celular: celInput.value,
+        code: codigoInput.value,
+      });
     } else {
-      if (!email || !password) {
-        setAuthMessage("Preencha email e senha.", "error");
-        return;
-      }
-      doLogin(email, password);
+      doLogin(emailInput.value, passInput.value);
     }
   });
 
-  btnToggle.addEventListener("click", toggleMode);
+  document.getElementById("showRegister").addEventListener("click", toggleMode);
 
-  btnLogout.addEventListener("click", () => {
-    fecharPaywall();
-    doLogout();
+  document.getElementById("btnSendCode").addEventListener("click", () => {
+    if (!emailInput.value) {
+      showToast("Digite seu e-mail.", "error");
+      return;
+    }
+    enviarCodigo(emailInput.value);
   });
 
-  btnAdminToggle.addEventListener("click", () => {
-    adminPanel.style.display =
-      adminPanel.style.display === "block" ? "none" : "block";
-    if (adminPanel.style.display === "block") carregarPendentes();
+  document.getElementById("btnLogout").addEventListener("click", () => {
+    localStorage.removeItem("usuario");
+    location.reload();
   });
-
-  if (closePaywall) {
-    closePaywall.addEventListener("click", fecharPaywall);
-  }
-  if (btnJaPaguei) {
-    btnJaPaguei.addEventListener("click", () => {
-      showToast(
-        "Envie o comprovante para o admin liberar seu acesso.",
-        "info"
-      );
-    });
-  }
-
-  // começa em modo LOGIN (esconde nome/celular)
-  toggleMode(); // liga cadastro
-  toggleMode(); // volta para login, mas garante estados
 });
