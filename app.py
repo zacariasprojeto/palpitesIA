@@ -3,21 +3,34 @@ import json
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify
 from supabase import create_client, Client
-
-# -----------------------------------------
-# CONFIG SUPABASE
-# -----------------------------------------
-
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+from flask_cors import CORS # Adicionado CORS para ambiente de produção
 
 # -----------------------------------------
 # INICIALIZAÇÃO DO FLASK
 # -----------------------------------------
 
 app = Flask(__name__)
+# Habilita CORS para permitir chamadas de frontend em outros domínios (como o Vercel)
+CORS(app) 
+
+# Variável Mock para pagamento
+PIX_KEY = "SEU PIX AQUI"
+
+# -----------------------------------------
+# FUNÇÃO AUXILIAR: Inicializa Supabase LOCALMENTE
+# Esta função PREVINE O ERRO DE INICIALIZAÇÃO (SupabaseException)
+# -----------------------------------------
+def get_supabase_client() -> Client | None:
+    """Cria e retorna o cliente Supabase usando variáveis de ambiente."""
+    url = os.environ.get("SUPABASE_URL")
+    # Usando SUPABASE_SERVICE_KEY conforme você especificou no seu código
+    key = os.environ.get("SUPABASE_SERVICE_KEY") 
+    
+    if not url or not key:
+        print("ERRO DE CONFIGURAÇÃO: SUPABASE_URL ou SUPABASE_SERVICE_KEY não encontrados.")
+        return None
+    
+    return create_client(url, key)
 
 
 # =====================================================
@@ -93,14 +106,21 @@ def dashboard():
 
 @app.route("/api/login", methods=["POST"])
 def api_login():
+    # 1. Inicializa Supabase (DEVE SER FEITO DENTRO DA ROTA)
+    supabase = get_supabase_client()
+    if not supabase:
+        return jsonify({"error": "Erro de configuração no servidor. Chaves Supabase não encontradas."}), 500
 
     data = request.get_json()
     email = data.get("email")
-    senha = data.get("senha")
+    # A variável 'senha' aqui é a 'password' que você usou anteriormente no front/log
+    senha = data.get("senha") 
 
     try:
         # 🔎 Busca usuário pelo email + senha
-        user = (
+        # Nota: O uso de .single() exige que apenas um resultado seja retornado, 
+        # o que é bom para login.
+        user_response = (
             supabase.table("users")
             .select("*")
             .eq("email", email)
@@ -109,13 +129,13 @@ def api_login():
             .execute()
         )
 
-        if not user.data:
+        if not user_response.data:
             return jsonify({"error": "Credenciais inválidas"}), 401
 
-        user = user.data  # simplificar
+        user = user_response.data  # simplificar
 
         # 🌟 ADMIN = ACESSO ILIMITADO
-        if user["is_admin"] == True:
+        if user.get("is_admin") == True:
             return jsonify({"redirect": "/dashboard"}), 200
 
         # ⏳ VALIDAR PRAZO DE ACESSO
@@ -123,21 +143,37 @@ def api_login():
 
         trial_end = user.get("trial_end")
         paid_until = user.get("paid_until")
+        expira = None
 
         # Se tiver paid_until → usa isso primeiro
         if paid_until:
-            expira = datetime.fromisoformat(paid_until.replace("Z", ""))
-        else:
-            expira = datetime.fromisoformat(trial_end.replace("Z", ""))
-
-        if hoje > expira:
-        return jsonify({"error": "expired","message": "Sua licença está vencida.",
-        "redirect": "/pagamento"}), 403
+            try:
+                expira = datetime.fromisoformat(paid_until.replace("Z", "+00:00"))
+            except ValueError:
+                print(f"ERRO: Formato inválido para paid_until: {paid_until}")
+        
+        # Se paid_until falhou ou era None, tenta trial_end
+        if not expira and trial_end:
+            try:
+                # Adiciona o fuso horário para evitar problemas de conversão
+                expira = datetime.fromisoformat(trial_end.replace("Z", "+00:00")) 
+            except ValueError:
+                print(f"ERRO: Formato inválido para trial_end: {trial_end}")
+        
+        # Se não há data válida OU se expirou
+        if not expira or hoje > expira:
+            # CORREÇÃO DA INDENTAÇÃO APLICADA AQUI (era a linha 134)
+            return jsonify({
+                "error": "expired",
+                "message": "Sua licença está vencida.",
+                "redirect": "/pagamento"
+            }), 403
 
         return jsonify({"redirect": "/dashboard"}), 200
 
     except Exception as e:
         print("ERRO LOGIN:", e)
+        # Se a consulta falhar (por exemplo, erro de coluna ou configuração), retorna 500
         return jsonify({"error": "Erro no servidor"}), 500
 
 
@@ -147,9 +183,18 @@ def api_login():
 
 @app.route("/api/cadastro", methods=["POST"])
 def api_cadastro():
+    # 1. Inicializa Supabase
+    supabase = get_supabase_client()
+    if not supabase:
+        return jsonify({"error": "Erro de configuração no servidor."}), 500
 
     data = request.get_json()
     
+    # 2. Verifica se o email já existe ANTES de tentar inserir
+    existe_response = supabase.table("users").select("email").eq("email", data.get("email")).execute()
+    if existe_response.data:
+        return jsonify({"error": "Email já cadastrado."}), 400
+
     novo = {
         "nome": data.get("nome"),
         "email": data.get("email"),
@@ -157,7 +202,7 @@ def api_cadastro():
         "senha": data.get("senha"),
         "is_admin": False,
         "plan": "trial",
-        "trial_end": (datetime.utcnow() + timedelta(days=30)).isoformat(),
+        "trial_end": (datetime.utcnow() + timedelta(days=30)).isoformat() + 'Z', # Adiciona 'Z' ao final para consistência
         "paid_until": None
     }
 
@@ -166,6 +211,7 @@ def api_cadastro():
         return jsonify({"success": True}), 201
     except Exception as e:
         print("ERRO CADASTRO:", e)
+        # Em caso de erro de DB, retorna 500
         return jsonify({"error": "Erro ao cadastrar"}), 500
 
 
@@ -175,14 +221,19 @@ def api_cadastro():
 
 @app.route("/run-job")
 def run_job():
+    # 1. Inicializa Supabase
+    supabase = get_supabase_client()
+    if not supabase:
+        return "Erro de configuração no servidor.", 500
 
     try:
+        # A inserção de dados deve ser feita em blocos separados.
         supabase.table("individuais").insert(gerar_apostas_mock_fallback()).execute()
         supabase.table("multiplas").insert(gerar_multiplas_mock_fallback()).execute()
         supabase.table("surebets").insert(gerar_surebets_mock_fallback()).execute()
     except Exception as e:
         print("ERRO CRON:", e)
-        return "Erro", 500
+        return "Erro ao executar job", 500
 
     return "OK", 200
 
@@ -192,4 +243,5 @@ def run_job():
 # ---------------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Removeu 'debug=True' para evitar conflitos de reloader em alguns ambientes, se necessário.
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
