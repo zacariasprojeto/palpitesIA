@@ -1,148 +1,152 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lanzaca IA – Login</title>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lanzaca IA</title>
     <style>
+
         body {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
-            background: radial-gradient(circle at top, #0f0f0f, #000000);
-            color: white;
             height: 100vh;
+            background: #0a0a0a;
+            font-family: Arial, sans-serif;
+            color: white;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        .card-login {
-            width: 90%;
-            max-width: 420px;
-            background: rgba(20, 20, 20, 0.9);
-            padding: 30px;
-            border-radius: 18px;
-            border: 1px solid #0aff64;
-            box-shadow: 0 0 20px rgba(0, 255, 100, 0.15);
-            animation: fadeIn 0.6s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .card {
+            background: #111;
+            width: 420px;
+            padding: 35px;
+            border-radius: 14px;
+            border: 2px solid #00ff80;
+            text-align: center;
+            box-shadow: 0 0 25px #00ff80;
         }
 
         .logo {
+            font-size: 45px;
+            color: #00ff80;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            margin-bottom: 5px;
             font-size: 26px;
-            font-weight: bold;
-            text-align: center;
+            color: #00ff80;
+        }
+
+        .desc {
+            margin-top: -5px;
             margin-bottom: 25px;
-            color: #0aff64;
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        label {
+            display: block;
+            text-align: left;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            color: #ddd;
+            font-size: 14px;
         }
 
         input {
             width: 100%;
-            padding: 14px;
-            margin: 10px 0;
-            border-radius: 10px;
-            border: 1px solid #333;
-            background: #111;
+            padding: 12px;
+            border-radius: 6px;
+            border: none;
+            outline: none;
+            background: #1a1a1a;
             color: white;
             font-size: 15px;
-            outline: none;
-            transition: 0.2s;
-        }
-
-        input:focus {
-            border-color: #0aff64;
+            border: 1px solid #0f0;
         }
 
         .btn {
             width: 100%;
-            padding: 14px;
-            margin-top: 10px;
-            background: #0aff64;
+            margin-top: 20px;
+            background: #00ff80;
             color: black;
+            padding: 14px;
+            font-size: 16px;
             font-weight: bold;
-            font-size: 17px;
-            border: none;
-            border-radius: 10px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: 0.2s;
+            border: none;
         }
 
         .btn:hover {
-            background: #11ff75;
-            transform: scale(1.02);
+            background: #00cc66;
         }
 
-        .link {
-            margin-top: 15px;
-            text-align: center;
+        .signup {
+            margin-top: 18px;
             font-size: 14px;
-            opacity: 0.8;
+            color: #ccc;
         }
 
-        .link span {
-            color: #0aff64;
-            cursor: pointer;
+        .signup a {
+            color: #00ff80;
             font-weight: bold;
+            text-decoration: none;
         }
 
-        .erro {
-            color: #ff4d4d;
-            text-align: center;
-            margin-bottom: 10px;
-            display: none;
+        .error {
+            color: red;
+            margin-top: 10px;
+            font-size: 14px;
         }
+
     </style>
+
+    <script>
+        async function login() {
+            const email = document.getElementById("email").value;
+            const senha = document.getElementById("senha").value;
+
+            const resp = await fetch("/api/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, senha })
+            });
+
+            const data = await resp.json();
+
+            if (resp.status === 200) {
+                window.location.href = "/dashboard";
+            } else {
+                document.getElementById("msg").innerText = data.error || "Credenciais inválidas";
+            }
+        }
+    </script>
 </head>
 
 <body>
 
-    <div class="card-login">
-        <div class="logo">⚡ Lanzaca IA</div>
+    <div class="card">
+        <div class="logo">⚡</div>
 
-        <div id="erro" class="erro">Erro ao fazer login</div>
+        <h1>Lanzaca IA</h1>
+        <p class="desc">Sistema Premium de Análise de Apostas</p>
 
-        <input id="email" type="email" placeholder="Digite seu email" />
-        <input id="senha" type="password" placeholder="Digite sua senha" />
+        <label>Usuário</label>
+        <input id="email" type="text" placeholder="Digite seu usuário">
 
-        <button class="btn" onclick="login()">Entrar</button>
+        <label>Senha</label>
+        <input id="senha" type="password" placeholder="Digite sua senha">
 
-        <div class="link">
-            Não tem conta? <span onclick="alert('Cadastro será ativado aqui depois')">Cadastrar</span>
-        </div>
+        <button class="btn" onclick="login()">➜ Entrar no Sistema</button>
+
+        <p class="signup">Não tem conta? <a href="/cadastro">Cadastrar</a></p>
+
+        <p id="msg" class="error"></p>
     </div>
-
-    <script>
-        async function login() {
-            const email = document.getElementById("email").value.trim();
-            const senha = document.getElementById("senha").value.trim();
-            const erro = document.getElementById("erro");
-
-            erro.style.display = "none";
-
-            const r = await fetch("/api/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email, password: senha })
-            });
-
-            const data = await r.json();
-
-            if (!data.success) {
-                erro.innerText = data.error || "Erro ao fazer login";
-                erro.style.display = "block";
-                return;
-            }
-
-            // Redireciona para o painel principal
-            window.location.href = "/painel";
-        }
-    </script>
 
 </body>
 </html>
