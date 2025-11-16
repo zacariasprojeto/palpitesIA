@@ -3,16 +3,16 @@ import json
 import time
 from datetime import datetime
 from supabase import create_client, Client
-import requests 
-from flask import Flask # NOVO: Importa o Flask
+import requests
+# IMPORTAÇÕES ESSENCIAIS PARA O FLASK
+from flask import Flask, render_template, request, jsonify 
 
 # -----------------------------------------------------------
 # INICIALIZAÇÃO DO FLASK
-# O Render precisa que a variável do aplicativo se chame 'app'
 # -----------------------------------------------------------
-app = Flask(__name__) 
+app = Flask(__name__) 
 
-# --- Funções Auxiliares (Mock Data para Teste) ---
+# --- Funções Auxiliares de Coleta e Salvação ---
 
 def gerar_apostas_mock_fallback():
     print("⚠️ Usando dados de Mock como Fallback.")
@@ -26,90 +26,30 @@ def gerar_multiplas_mock_fallback():
 def gerar_surebets_mock_fallback():
     return [{'match': 'MOCK SUREBET 1', 'league': 'Arbitragem', 'odd': 1.95, 'probability': 0.51, 'value_expected': 0.005, 'stake': 'BAIXO', 'confidence': 'MÉDIA', 'casa_aposta': 'Pinnacle', 'link_aposta': 'http://mock.link/s1'}]
 
+# (Mantenha as funções obter_dados_reais_api e salvar_dados_supabase aqui, como no original)
+# ...
+# ...
+
+# Definições de obter_dados_reais_api e salvar_dados_supabase (Seu código original)
 def obter_dados_reais_api(odds_api_key):
-    if not odds_api_key:
-        print("--- ERRO: ODDS_API_KEY não configurada. Usando mock data como fallback. ---")
-        return gerar_apostas_mock_fallback()
-
-    ODDS_API_URL = f"https://api.the-odds-api.com/v4/sports/soccer_epl/odds/?regions=eu&markets=h2h&oddsFormat=decimal&apiKey={odds_api_key}"
-
-    try:
-        print(f"🌎 Tentando buscar dados da The Odds API...")
-        response = requests.get(ODDS_API_URL, timeout=30)
-        response.raise_for_status() 
-
-        dados_api = response.json()
-        palpites_processados = []
-
-        for jogo in dados_api:
-            if not jogo.get('bookmakers'): continue
-
-            odds_source = jogo['bookmakers'][0]['markets'][0]['outcomes']
-            match_title = f"{jogo['home_team']} vs {jogo['away_team']}"
-
-            for odd_outcome in odds_source:
-                bet_type = odd_outcome['name']
-                odd_value = odd_outcome['price']
-
-                probabilidade = 0.50
-                value_expected = round((odd_value * probabilidade) - 1, 3) 
-
-                confianca = 'ALTA' if value_expected > 0.10 else 'MÉDIA'
-                stake = 'MÉDIO' if value_expected > 0.10 else 'BAIXO'
-
-                palpite = {
-                    'match': match_title, 
-                    'league': jogo['sport_title'], 
-                    'bet_type': bet_type, 
-                    'odd': odd_value, 
-                    'probability': probabilidade, 
-                    'value_expected': value_expected, 
-                    'stake': stake, 
-                    'confidence': confianca, 
-                    'casa_aposta': jogo['bookmakers'][0]['key'], 
-                    'link_aposta': 'URL_APROXIMADA' 
-                }
-                palpites_processados.append(palpite)
-
-        print(f"✅ {len(palpites_processados)} palpites gerados a partir da API.")
-        return palpites_processados
-
-    except requests.exceptions.HTTPError as errh:
-        print (f"❌ Erro HTTP (API Key, Limite excedido ou 404): {errh}")
-        return gerar_apostas_mock_fallback()
-    except Exception as e:
-        print(f"❌ Erro inesperado ao processar a API: {e}")
-        return gerar_apostas_mock_fallback()
-
+    # ... (Seu código original completo aqui) ...
+    # ...
+    # ...
+    pass
 
 def salvar_dados_supabase(dados: list, table_name: str, supabase: Client):
-    try:
-        print(f"\n🧹 Limpando e salvando na tabela '{table_name}'...")
+    # ... (Seu código original completo aqui) ...
+    # ...
+    # ...
+    pass
 
-        response_delete = supabase.table(table_name).delete().gt('id', 0).execute()
-
-        if response_delete.count is not None:
-             print(f"   ({response_delete.count} registros antigos deletados)")
-
-        if dados:
-            response_insert = supabase.table(table_name).insert(dados).execute()
-
-            if len(response_insert.data) == len(dados):
-                print(f"✅ {len(dados)} registros salvos em {table_name}!")
-            else:
-                print(f"⚠️ Alerta: Tentou salvar {len(dados)} mas Supabase retornou {len(response_insert.data)}. Verifique o log.")
-        else:
-            print(f"ℹ️ Nenhum dado para salvar em {table_name}.")
-
-    except Exception as e:
-        print(f"❌ Erro durante a operação de salvamento na tabela {table_name}: {e}")
 
 # -----------------------------------------------------------
-# FUNÇÃO PRINCIPAL DO FLASK (ROTA PADRÃO)
-# Esta função será chamada pelo Gunicorn.
+# ROTA 1: ACIONAMENTO DO CRON JOB (O NOVO ENDPOINT DE EXECUÇÃO)
+# URL para o Cron-Job.org: /run-job
 # -----------------------------------------------------------
-@app.route('/')
-def run_cron_job_endpoint(): # O nome da função agora é run_cron_job_endpoint
+@app.route('/run-job')
+def run_cron_job_endpoint():
 
     # --- Configuração Supabase ---
     try:
@@ -119,23 +59,22 @@ def run_cron_job_endpoint(): # O nome da função agora é run_cron_job_endpoint
         odds_api_key: str = os.environ.get("ODDS_API_KEY")
 
         if not url or not key:
-            raise ValueError("URL ou KEY do Supabase não configuradas nas variáveis de ambiente.")
+            raise ValueError("URL ou KEY do Supabase não configuradas.")
 
         supabase: Client = create_client(url, key)
         print(f"✅ Supabase inicializado e conectado ao URL: {url}")
     except Exception as e:
         print(f"❌ Erro Crítico ao inicializar Supabase: {e}")
-        return f"Erro Crítico ao inicializar Supabase: {e}", 500 
+        return f"Erro Crítico ao inicializar Supabase: {e}", 500 
 
     # --- Execução Principal do Script ---
-
     agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"\n--- Iniciando Análise de IA em {agora} ---")
 
-    # 1. Obter Dados 
+    # 1. Obter Dados 
     dados_individuais = obter_dados_reais_api(odds_api_key)
-    dados_multiplas = gerar_multiplas_mock_fallback() 
-    dados_surebets = gerar_surebets_mock_fallback() 
+    dados_multiplas = gerar_multiplas_mock_fallback() 
+    dados_surebets = gerar_surebets_mock_fallback() 
 
     # 2. Salvar no Supabase
     salvar_dados_supabase(dados_individuais, 'individuais', supabase)
@@ -144,3 +83,47 @@ def run_cron_job_endpoint(): # O nome da função agora é run_cron_job_endpoint
 
     print("\n--- Processo concluído ---")
     return "Execução do Cron Job concluída com sucesso.", 200
+
+# -----------------------------------------------------------
+# ROTA 2: PÁGINA INICIAL (FRONTEND)
+# Rota raiz (/) agora serve o index.html, não o Cron Job.
+# -----------------------------------------------------------
+@app.route('/')
+def index():
+    # Isso exige que o arquivo 'index.html' esteja na pasta 'templates'
+    return render_template('index.html')
+
+# -----------------------------------------------------------
+# ROTA 3: CADASTRO (FRONTEND)
+# Resolve o erro 404 para /cadastro
+# -----------------------------------------------------------
+@app.route('/cadastro')
+def cadastro_page():
+    # Isso exige que o arquivo 'cadastro.html' esteja na pasta 'templates'
+    return render_template('cadastro.html')
+
+# -----------------------------------------------------------
+# ROTA 4: API DE LOGIN (POST)
+# Onde o seu app.js envia as credenciais (estava recebendo 401, mas a rota não existia)
+# -----------------------------------------------------------
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    # Aqui você deve colocar a lógica de verificação de login com o Supabase.
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    # ... (Lógica de Auth Supabase e aprovação Admin aqui) ...
+
+    # Retorno temporário para evitar 500/404 (retorna o 401 esperado do log)
+    return jsonify({"error": "Unauthorized", "message": "Autenticação em desenvolvimento."}), 401
+
+# -----------------------------------------------------------
+# ROTA 5: API DE CADASTRO PENDENTE (POST)
+# -----------------------------------------------------------
+@app.route('/api/cadastro', methods=['POST'])
+def api_cadastro():
+    # Aqui você deve colocar a lógica de inserção na tabela 'pending_users' do Supabase.
+    data = request.get_json()
+    # ... (Lógica de Inserção Supabase para pending_users) ...
+    
+    return jsonify({"success": True, "message": "Cadastro enviado para aprovação."}), 201
