@@ -5,128 +5,125 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚡ Criar Conta - Lanzaca IA</title>
 
-    <link rel="stylesheet" href="/static/style.css">
-
     <style>
         body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
             background: #000;
-            background: linear-gradient(135deg, #0a0a0a, #000);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
-        .cadastro-container {
-            background: rgba(26, 26, 26, 0.95);
-            padding: 35px;
-            width: 420px;
-            border-radius: 20px;
+        .card {
+            background: #0d0d0d;
+            width: 380px;
+            padding: 40px;
+            border-radius: 15px;
             border: 2px solid #00ff88;
-            box-shadow: 0 0 25px #00ff8855;
+            box-shadow: 0 0 25px #00ff88;
             text-align: center;
         }
 
-        .cadastro-container h1 {
-            font-size: 2.2em;
-            background: linear-gradient(135deg, #00ff88, #00aaff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 5px;
+        .logo {
+            font-size: 45px;
+            color: #00ff88;
+            margin-bottom: 10px;
         }
 
-        .sub {
-            color: #888;
+        h2 {
+            color: #00ff88;
+            margin: 0;
+            font-size: 28px;
+        }
+
+        p.sub {
+            color: #b3b3b3;
+            font-size: 13px;
             margin-bottom: 25px;
-            font-size: 0.9em;
         }
 
-        .input-group {
-            text-align: left;
-            margin-bottom: 18px;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 13px;
-            border-radius: 10px;
-            background: rgba(255,255,255,0.05);
-            border: 2px solid rgba(255,255,255,0.1);
+        input {
+            width: 92%;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 6px;
+            border: 1px solid #1f1f1f;
+            background: #1a1a1a;
             color: #fff;
-            transition: 0.3s;
+            font-size: 14px;
         }
 
-        .input-group input:focus {
-            border-color: #00ff88;
+        input:focus {
+            outline: none;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 8px #00ff88;
         }
 
-        .btn {
+        button {
             width: 100%;
             padding: 14px;
             background: #00ff88;
-            font-weight: bold;
             border: none;
-            border-radius: 10px;
-            cursor: pointer;
+            border-radius: 6px;
             color: #000;
-            margin-top: 5px;
-            transition: 0.3s;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
         }
 
-        .btn:hover {
+        button:hover {
             background: #00cc6a;
-            transform: translateY(-2px);
         }
 
-        .trocar {
+        .link {
             margin-top: 15px;
-            color: #ccc;
+            font-size: 14px;
         }
 
-        .trocar a {
+        .link a {
             color: #00ff88;
             text-decoration: none;
-            font-weight: bold;
         }
+
+        .error {
+            margin-top: 12px;
+            color: #ff5050;
+            font-size: 14px;
+        }
+
     </style>
 </head>
-
 <body>
 
-<div class="cadastro-container">
+    <div class="card">
+        <div class="logo">⚡</div>
+        <h2>Criar conta</h2>
+        <p class="sub">Acesso Premium por 30 dias grátis</p>
 
-    <div style="font-size:40px; margin-bottom:10px;">⚡</div>
+        <form method="POST" action="/cadastro">
 
-    <h1>Criar Conta</h1>
-    <p class="sub">Acesso Premium por 30 dias grátis</p>
-
-    <form method="POST" action="/cadastro">
-
-        <div class="input-group">
             <input type="text" name="nome" placeholder="Nome completo" required>
+            <input type="text" name="celular" placeholder="Celular" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="senha" placeholder="Senha" required>
+
+            <button type="submit">➜ Cadastrar</button>
+
+        </form>
+
+        <div class="link">
+            Já tem conta?
+            <a href="/">Entrar</a>
         </div>
 
-        <div class="input-group">
-            <input type="text" name="celular" placeholder="Celular (DDD + número)" required>
-        </div>
+        {% if erro %}
+        <div class="error">{{ erro }}</div>
+        {% endif %}
 
-        <div class="input-group">
-            <input type="email" name="email" placeholder="Seu email" required>
-        </div>
-
-        <div class="input-group">
-            <input type="password" name="senha" placeholder="Crie uma senha" required>
-        </div>
-
-        <button class="btn" type="submit">➜ Criar Conta</button>
-    </form>
-
-    <p class="trocar">
-        Já tem conta?
-        <a href="/">Entrar</a>
-    </p>
-
-</div>
+    </div>
 
 </body>
 </html>
