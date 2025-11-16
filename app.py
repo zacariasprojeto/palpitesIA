@@ -1,58 +1,62 @@
 import os
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS
 from supabase import create_client, Client
+from flask_cors import CORS
 
-# -----------------------------------
-# CONFIGURAÇÃO DO APP
-# -----------------------------------
+# --------------------------------------------
+# CONFIGURAÇÃO
+# --------------------------------------------
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__)
 CORS(app)
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")  # SERVICE KEY!
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+PIX_KEY = "SEU PIX AQUI"
 
-PIX_KEY = os.getenv("PIX_KEY", "0000000000000")
-ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
-
-# -----------------------------------
-# FUNÇÃO – VERIFICA SE USUÁRIO TEM ACESSO
-# -----------------------------------
-
-def verificar_acesso(usuario):
-    email = usuario["email"]
-    is_admin = usuario.get("is_admin", False)
-    trial_end = usuario.get("trial_end")
-    paid_until = usuario.get("paid_until")
-
-    if is_admin:
-        return True
-
+# --------------------------------------------
+# FUNÇÃO – VERIFICAR ACESSO (trial ou pago)
+# --------------------------------------------
+def verificar_acesso(user):
     agora = datetime.utcnow()
 
-    if paid_until and datetime.fromisoformat(paid_until.replace("Z", "")) > agora:
-        return True
-
-    if trial_end and datetime.fromisoformat(trial_end.replace("Z", "")) > agora:
-        return True
+    # Trial ativo?
+    if user["trial_end"]:
+        trial = datetime.fromisoformat(user["trial_end"].replace("Z", ""))
+        if agora < trial:
+            return True
+    
+    # Plano pago ativo?
+    if user["paid_until"]:
+        pago = datetime.fromisoformat(user["paid_until"].replace("Z", ""))
+        if agora < pago:
+            return True
 
     return False
 
-# -----------------------------------
-# ROTA – HOME
-# -----------------------------------
 
+# --------------------------------------------
+# ROTA: TELA PRINCIPAL
+# --------------------------------------------
 @app.route("/")
-def home():
+def index():
     return render_template("index.html")
 
-# -----------------------------------
-# ROTA – CADASTRO
-# -----------------------------------
 
+# --------------------------------------------
+# ROTA: TELA DE CADASTRO
+# --------------------------------------------
+@app.route("/cadastro")
+def cadastro():
+    return render_template("cadastro.html")
+
+
+# --------------------------------------------
+# ROTA: API DE CADASTRO
+# --------------------------------------------
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.json
@@ -61,14 +65,15 @@ def register():
     celular = data.get("celular")
     password = data.get("password")
 
-    # Já existe?
+    # Verifica se já existe
     existe = supabase.table("users").select("*").eq("email", email).execute()
+
     if existe.data:
         return jsonify({"error": "Email já cadastrado."}), 400
 
     trial = datetime.utcnow() + timedelta(days=30)
 
-    novo = supabase.table("users").insert({
+    supabase.table("users").insert({
         "nome": nome,
         "email": email,
         "password": password,
@@ -81,10 +86,10 @@ def register():
 
     return jsonify({"success": True})
 
-# -----------------------------------
-# ROTA – LOGIN
-# -----------------------------------
 
+# --------------------------------------------
+# ROTA: LOGIN
+# --------------------------------------------
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.json
@@ -98,6 +103,7 @@ def login():
 
     user = user.data[0]
 
+    # Acesso expirado?
     if not verificar_acesso(user):
         return jsonify({
             "error": "acesso_bloqueado",
@@ -107,6 +113,7 @@ def login():
 
     return jsonify({
         "success": True,
+        "redirect": "https://lanzacaia.vercel.app/dashboard",
         "user": {
             "id": user["id"],
             "nome": user["nome"],
@@ -115,62 +122,17 @@ def login():
         }
     })
 
-# -----------------------------------
-# ROTA – PAGAMENTO PIX (APROVA MANUAL AUTOMÁTICO)
-# -----------------------------------
 
-@app.route("/api/pagamento/confirmar", methods=["POST"])
-def confirmar_pagamento():
-    email = request.json.get("email")
+# --------------------------------------------
+# ROTA: HEALTH CHECK (Render não dormir)
+# --------------------------------------------
+@app.route("/health")
+def health():
+    return "OK", 200
 
-    novo_prazo = datetime.utcnow() + timedelta(days=30)
 
-    supabase.table("users").update({
-        "paid_until": novo_prazo.isoformat(),
-        "plan": "mensal"
-    }).eq("email", email).execute()
-
-    return jsonify({"success": True})
-
-# -----------------------------------
-# ROTA – ADMIN LISTA USUÁRIOS
-# -----------------------------------
-
-@app.route("/api/admin/usuarios", methods=["GET"])
-def admin_usuarios():
-    users = supabase.table("users").select("id,nome,email,plan,trial_end,paid_until,is_admin").execute()
-    return jsonify(users.data)
-
-# -----------------------------------
-# ROTA – ADMIN LIBERAR USUÁRIO
-# -----------------------------------
-
-@app.route("/api/admin/liberar", methods=["POST"])
-def admin_liberar():
-    user_id = request.json.get("user_id")
-    dias = request.json.get("dias", 30)
-
-    novo = datetime.utcnow() + timedelta(days=dias)
-
-    supabase.table("users").update({
-        "paid_until": novo.isoformat(),
-        "plan": "liberado_admin"
-    }).eq("id", user_id).execute()
-
-    return jsonify({"success": True})
-
-# -----------------------------------
-# ROTA – API DAS ODDS / PALPITES
-# -----------------------------------
-
-@app.route("/api/palpites")
-def palpites():
-    # Aqui depois vamos integrar com sua API de apostas (API-FOOTBALL)
-    return jsonify({"status": "ok", "mensagem": "API de palpites conectada!"})
-
-# -----------------------------------
-# START
-# -----------------------------------
-
+# --------------------------------------------
+# EXECUTAR
+# --------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
