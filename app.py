@@ -1,41 +1,47 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, jsonify
 from supabase import create_client, Client
 from datetime import datetime, timedelta
 import random
+import smtplib
 
 app = Flask(__name__)
 app.secret_key = "LanzacaIA2025"
 
+# ==============================
+# SUPABASE
+# ==============================
+
 SUPABASE_URL = "https://tqdhkgpknttphjmfltbg.supabase.co"
-SUPABASE_KEY = "SUA_KEY_AQUI"
+SUPABASE_KEY = "SUA_KEY_AQUI"  # <<< COLOQUE SUA CHAVE AQUI
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-# ===========================
+# ==============================
 # FUNÇÕES
-# ===========================
+# ==============================
 
 def gerar_codigo():
+    """Gera um código de 6 dígitos"""
     return random.randint(100000, 999999)
 
-def enviar_email_fake(email, codigo):
-    print(f"\n====== CODIGO DE CONFIRMAÇÃO ======")
+def enviar_email(email, codigo):
+    """FAKE — Apenas printa o código no terminal (Render mostra nos logs)."""
+    print("\n==============================")
+    print("⚡ CÓDIGO DE CONFIRMAÇÃO LANZACA IA ⚡")
     print(f"Email: {email}")
     print(f"Código: {codigo}")
-    print("===================================\n")
+    print("==============================\n")
 
 
-# ===========================
-# ROTAS
-# ===========================
+# ==============================
+# ROTAS – LOGIN
+# ==============================
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
 
-
-# LOGIN
 @app.route("/login", methods=["POST"])
 def login():
     email = request.form.get("email")
@@ -44,7 +50,7 @@ def login():
     dados = supabase.table("users").select("*").eq("email", email).eq("senha", senha).execute()
 
     if len(dados.data) == 0:
-        return render_template("index.html", erro="Credenciais inválidas")
+        return render_template("index.html", erro="Erro no login.")
 
     user = dados.data[0]
 
@@ -54,8 +60,10 @@ def login():
     return redirect("/dashboard")
 
 
+# ==============================
+# ROTAS – CADASTRO
+# ==============================
 
-# CADASTRO
 @app.route("/cadastro", methods=["GET", "POST"])
 def cadastro():
     if request.method == "GET":
@@ -66,13 +74,17 @@ def cadastro():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
+    # Existe usuário definitivo?
     existe = supabase.table("users").select("*").eq("email", email).execute()
     if len(existe.data) > 0:
-        return render_template("cadastro.html", erro="Email já cadastrado")
+        return render_template("cadastro.html", erro="Este email já está cadastrado.")
 
-    codigo = gerar_codigo()
+    # Existe pendente?
+    pend = supabase.table("pending_users").select("*").eq("email", email).execute()
+    if len(pend.data) > 0:
+        supabase.table("pending_users").delete().eq("email", email).execute()
 
-    # salva usuário temporário
+    # Salvar pendente
     supabase.table("pending_users").insert({
         "nome": nome,
         "celular": celular,
@@ -80,62 +92,89 @@ def cadastro():
         "senha": senha
     }).execute()
 
-    # salva código
+    # Gerar código
+    codigo = gerar_codigo()
+
+    # Registrar código
     supabase.table("confirm_codes").insert({
         "email": email,
         "codigo": codigo
     }).execute()
 
-    enviar_email_fake(email, codigo)
+    # Enviar (fake)
+    enviar_email(email, codigo)
 
+    # Redirecionar para a página de confirmação
     return redirect(f"/confirmar?email={email}")
 
 
-# TELA PARA DIGITAR CÓDIGO
-@app.route("/confirmar", methods=["GET", "POST"])
-def confirmar():
+# ==============================
+# ROTAS – CONFIRMAÇÃO DE CÓDIGO
+# ==============================
+
+@app.route("/confirmar", methods=["GET"])
+def confirmar_tela():
     email = request.args.get("email")
+    return render_template("confirmar.html", email=email)
 
-    if request.method == "GET":
-        return render_template("confirmar.html", email=email)
 
-    codigo_digitado = request.form.get("codigo")
-    email = request.form.get("email")
+@app.route("/api/confirmar", methods=["POST"])
+def api_confirmar():
+    dados = request.get_json()
+    codigo = dados.get("codigo")
+    email = dados.get("email")
 
-    dados = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo_digitado).execute()
+    if not codigo or not email:
+        return jsonify({"message": "Dados incompletos"}), 400
 
-    if len(dados.data) == 0:
-        return render_template("confirmar.html", email=email, erro="Código inválido")
+    consulta = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo).execute()
 
-    # buscar usuario pendente
+    if len(consulta.data) == 0:
+        return jsonify({"message": "Código incorreto"}), 401
+
+    # Buscar pendente
     pend = supabase.table("pending_users").select("*").eq("email", email).execute()
-    user = pend.data[0]
+    if len(pend.data) == 0:
+        return jsonify({"message": "Nenhum cadastro pendente encontrado"}), 404
 
-    # mover para tabela final
-    supabase.table("users").insert(user).execute()
+    usuario = pend.data[0]
 
-    # remover temporários
+    # Salvar em users (definitivo)
+    supabase.table("users").insert({
+        "nome": usuario["nome"],
+        "celular": usuario["celular"],
+        "email": usuario["email"],
+        "senha": usuario["senha"],
+        "is_admin": False
+    }).execute()
+
+    # Remover pendente e código usado
     supabase.table("pending_users").delete().eq("email", email).execute()
     supabase.table("confirm_codes").delete().eq("email", email).execute()
 
-    return redirect("/")
+    return jsonify({"message": "Confirmado com sucesso"}), 200
 
 
-# DASHBOARD
+# ==============================
+# ROTAS – DASHBOARD / LOGOUT
+# ==============================
+
 @app.route("/dashboard")
 def dashboard():
     if "email" not in session:
         return redirect("/")
-
     return render_template("dashboard.html", nome=session["nome"])
 
 
-# LOGOUT
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
+
+# ==============================
+# RENDER
+# ==============================
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
