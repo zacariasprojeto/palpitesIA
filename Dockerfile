@@ -1,13 +1,41 @@
+# -------------------------
+# BASE IMAGE
+# -------------------------
 FROM python:3.11-slim
 
-ENV PYTHONUNBUFFERED=1
+# -------------------------
+# SISTEMA E DEPENDÊNCIAS
+# -------------------------
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# -------------------------
+# DIRETORIO DO PROJETO
+# -------------------------
 WORKDIR /app
 
-COPY requisitos.txt /app/requirements.txt
+# -------------------------
+# COPIAR ARQUIVOS
+# -------------------------
+COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app
 
-EXPOSE 8080
+# -------------------------
+# EXPOR PORTA PARA RENDER
+# -------------------------
+EXPOSE 10000
 
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8080", "app:app"]
+# -------------------------
+# DEFINIR VARIÁVEIS GLOBAIS
+# -------------------------
+ENV PORT=10000
+ENV PYTHONUNBUFFERED=1
+
+# -------------------------
+# COMANDO DE EXECUÇÃO
+# -------------------------
+CMD ["gunicorn", "-b", "0.0.0.0:10000", "app:app"]
