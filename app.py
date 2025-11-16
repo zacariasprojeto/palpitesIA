@@ -1,22 +1,15 @@
 from flask import Flask, render_template, request, redirect, session
 from supabase import create_client, Client
 from datetime import datetime, timedelta
+import random
 
 app = Flask(__name__)
 app.secret_key = "LanzacaIA2025"
-
-# ==============================
-# SUPABASE
-# ==============================
 
 SUPABASE_URL = "https://tqdhkgpknttphjmfltbg.supabase.co"
 SUPABASE_KEY = "SUA_KEY_AQUI"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# ==============================
-# FUNÇÕES
-# ==============================
 
 def usuario_logado():
     return "email" in session
@@ -29,14 +22,14 @@ def plano_valido(data):
     return validade >= hoje
 
 # ==============================
-# ROTAS
+# TELAS
 # ==============================
 
-# LOGIN (INDEX)
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
 
+# LOGIN
 @app.route("/login", methods=["POST"])
 def login():
     email = request.form.get("email")
@@ -87,17 +80,47 @@ def cadastro():
         "confirmado": False
     }).execute()
 
+    # GERAR E SALVAR CÓDIGO
+    codigo = str(random.randint(100000, 999999))
+
+    supabase.table("confirm_codes").insert({
+        "email": email,
+        "codigo": codigo
+    }).execute()
+
+    print(f"⚠ Código de confirmação: {codigo}")  # (mostrar no log)
+
     return redirect("/confirmar?email=" + email)
 
-# DASHBOARD (PROTEGIDA)
+# TELA PARA DIGITAR O CÓDIGO
+@app.route("/confirmar")
+def confirmar():
+    email = request.args.get("email")
+    return render_template("confirmar.html", email=email)
+
+# VALIDAR CÓDIGO
+@app.route("/validar_codigo", methods=["POST"])
+def validar_codigo():
+    email = request.form.get("email")
+    codigo = request.form.get("codigo")
+
+    dados = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo).execute()
+
+    if len(dados.data) == 0:
+        return render_template("confirmar.html", email=email, erro="Código inválido")
+
+    supabase.table("users").update({"confirmado": True}).eq("email", email).execute()
+
+    # remover código usado
+    supabase.table("confirm_codes").delete().eq("email", email).execute()
+
+    return render_template("confirmar.html", email=email, sucesso="Conta confirmada! Agora você pode entrar.")
+
+# DASHBOARD
 @app.route("/dashboard")
 def dashboard():
     if not usuario_logado():
         return redirect("/")
-
-    if not plano_valido(session["validade"]):
-        return redirect("/pagamento")
-
     return render_template("dashboard.html", nome=session["nome"])
 
 # PAGAMENTO
@@ -105,7 +128,6 @@ def dashboard():
 def pagamento():
     if not usuario_logado():
         return redirect("/")
-
     return render_template("pagamento.html")
 
 # LOGOUT
@@ -114,6 +136,5 @@ def logout():
     session.clear()
     return redirect("/")
 
-# RENDER
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
