@@ -14,32 +14,26 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "chave_default")
 # ==============================
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE = os.getenv("SUPABASE_SERVICE")
+SUPABASE_SERVICE = os.getenv("SUPABASE_SERVICE")  # ATENÇÃO: nome exato do Render
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE)
 
 
 # ==============================
-# EMAIL CONFIG (BREVO SMTP)
+# EMAIL CONFIG (BREVO)
 # ==============================
 
 SMTP_SERVER = "smtp-relay.brevo.com"
 SMTP_PORT = 587
-SMTP_USER = os.getenv("EMAIL_SENDER")        # seu email do Brevo
-SMTP_PASS = os.getenv("EMAIL_PASSWORD")      # senha SMTP do Brevo
+SMTP_USER = os.getenv("EMAIL_SENDER")
+SMTP_PASS = os.getenv("EMAIL_PASSWORD")
 
-
-# ==============================
-# FUNÇÕES
-# ==============================
 
 def gerar_codigo():
     return random.randint(100000, 999999)
 
 
 def enviar_email(destino, codigo):
-    """Envia código de confirmação pelo SMTP da Brevo"""
-
     msg = MIMEText(f"Seu código de confirmação é: {codigo}")
     msg["Subject"] = "Código de Confirmação - Lanzaca IA"
     msg["From"] = SMTP_USER
@@ -51,21 +45,19 @@ def enviar_email(destino, codigo):
             server.login(SMTP_USER, SMTP_PASS)
             server.sendmail(SMTP_USER, destino, msg.as_string())
 
-        print("Código enviado para o email:", destino)
+        print("Código enviado para:", destino)
 
     except Exception as e:
         print("ERRO AO ENVIAR EMAIL:", e)
 
 
-# ==============================
-# ROTAS
-# ==============================
+# ROTAS -------------------------------------
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
-# LOGIN
+
 @app.route("/login", methods=["POST"])
 def login():
     email = request.form.get("email")
@@ -83,7 +75,6 @@ def login():
     return redirect("/dashboard")
 
 
-# CADASTRO
 @app.route("/cadastro", methods=["GET", "POST"])
 def cadastro():
     if request.method == "GET":
@@ -94,15 +85,12 @@ def cadastro():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
-    # verifica se já existe em users
     existe = supabase.table("users").select("*").eq("email", email).execute()
     if len(existe.data) > 0:
         return render_template("cadastro.html", erro="Email já cadastrado.")
 
-    # remove pendente antigo
     supabase.table("pending_users").delete().eq("email", email).execute()
 
-    # salva pendente
     supabase.table("pending_users").insert({
         "nome": nome,
         "celular": celular,
@@ -110,32 +98,26 @@ def cadastro():
         "senha": senha
     }).execute()
 
-    # gerando código
     codigo = gerar_codigo()
 
-    # limpando códigos antigos do email
     supabase.table("confirm_codes").delete().eq("email", email).execute()
 
-    # registrando novo código
     supabase.table("confirm_codes").insert({
         "email": email,
         "codigo": str(codigo)
     }).execute()
 
-    # enviando email SMTP
     enviar_email(email, codigo)
 
     return redirect(f"/confirmar?email={email}")
 
 
-# TELA CONFIRMAR
 @app.route("/confirmar")
 def confirmar_tela():
     email = request.args.get("email")
     return render_template("confirmar.html", email=email)
 
 
-# VALIDAÇÃO DO CÓDIGO
 @app.route("/api/confirmar", methods=["POST"])
 def api_confirmar():
     dados = request.get_json()
@@ -156,7 +138,6 @@ def api_confirmar():
 
     usuario = pendente.data[0]
 
-    # cria usuário definitivo
     supabase.table("users").insert({
         "nome": usuario["nome"],
         "celular": usuario["celular"],
@@ -165,14 +146,12 @@ def api_confirmar():
         "is_admin": False
     }).execute()
 
-    # remove pendente e código
     supabase.table("pending_users").delete().eq("email", email).execute()
     supabase.table("confirm_codes").delete().eq("email", email).execute()
 
     return jsonify({"message": "Confirmado com sucesso"}), 200
 
 
-# DASHBOARD
 @app.route("/dashboard")
 def dashboard():
     if "email" not in session:
@@ -180,13 +159,13 @@ def dashboard():
     return render_template("dashboard.html", nome=session["nome"])
 
 
-# LOGOUT
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
 
-# RUN RENDER
+# RENDER PORT FIX
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.getenv("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
