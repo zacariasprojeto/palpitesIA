@@ -47,15 +47,15 @@ p.sub {
 
 input {
     width: 92%;
-    padding: 10px;
-    margin-top: 12px;
+    padding: 12px;
+    margin-top: 15px;
     border-radius: 6px;
     border: 1px solid #1f1f1f;
     background: #1a1a1a;
     color: white;
-    font-size: 18px;
+    font-size: 22px;
     text-align: center;
-    letter-spacing: 4px;
+    letter-spacing: 6px;
 }
 
 button {
@@ -89,7 +89,9 @@ button:hover {
     <div class="logo">⚡</div>
 
     <h2>Confirmar código</h2>
-    <p class="sub">Enviamos um código de 6 dígitos para o seu email.</p>
+    <p class="sub">Enviamos um código de 6 dígitos para o email:</p>
+
+    <p id="emailInfo" style="color:#00ff88; margin-top:-5px; font-size:14px;"></p>
 
     <input id="codigo" maxlength="6" placeholder="000000">
 
@@ -99,8 +101,16 @@ button:hover {
 </div>
 
 <script>
+function getEmailFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("email");
+}
+
+document.getElementById("emailInfo").innerText = getEmailFromURL();
+
 async function confirmar() {
     const codigo = document.getElementById("codigo").value.trim();
+    const email = getEmailFromURL();
     const erro = document.getElementById("erro");
 
     erro.style.display = "none";
@@ -114,7 +124,7 @@ async function confirmar() {
     const resp = await fetch("/api/confirmar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codigo })
+        body: JSON.stringify({ codigo, email })
     });
 
     const data = await resp.json();
