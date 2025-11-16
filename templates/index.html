@@ -1,145 +1,134 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>⚡ Lanzaca iA de Palpites</title>
-
-  <link rel="stylesheet" href="/static/style.css">
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <meta charset="UTF-8" />
+    <title>Lanzaca IA</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
+
 <body>
 
-  <!-- TELA DE LOGIN / CADASTRO -->
-  <div id="authContainer" class="tela-login">
-    <div class="login-container">
-      <div class="login-logo">⚡</div>
-      <h1 class="login-titulo">Lanzaca iA de Palpites</h1>
+    <!-- TOAST NOTIFICAÇÃO -->
+    <div id="toast" class="toast"></div>
 
-      <!-- Nome (mostra só no modo cadastro) -->
-      <div class="input-group" id="groupName" style="display:none;">
-        <label for="name">Nome completo</label>
-        <input id="name" type="text" placeholder="Seu nome completo"/>
-      </div>
+    <!-- ===========================
+         LOGIN / CADASTRO
+    ============================ -->
+    <div id="authContainer" class="auth-container">
 
-      <!-- Celular (mostra só no modo cadastro) -->
-      <div class="input-group" id="groupPhone" style="display:none;">
-        <label for="phone">Celular (WhatsApp)</label>
-        <input id="phone" type="tel" placeholder="(11) 99999-9999"/>
-      </div>
+        <div class="auth-box">
+            <h2 class="titulo">Lanzaca IA</h2>
 
-      <div class="input-group">
-        <label for="email">Email</label>
-        <input id="email" type="email" placeholder="seuemail@exemplo.com"/>
-      </div>
+            <p id="authMsg" class="auth-msg"></p>
 
-      <div class="input-group">
-        <label for="password">Senha</label>
-        <input id="password" type="password" placeholder="Sua senha"/>
-      </div>
+            <!-- Nome -->
+            <div id="nomeField" style="display:none;">
+                <input id="nome" type="text" class="input" placeholder="Seu nome completo" />
+            </div>
 
-      <button id="loginBtn" class="botao-login">Entrar</button>
+            <!-- Celular -->
+            <div id="celularField" style="display:none;">
+                <input id="celular" type="text" class="input" placeholder="Seu celular" />
+            </div>
 
-      <button id="showRegister"
-              class="botao-login botao-secundario">
-        Cadastrar
-      </button>
+            <!-- Email -->
+            <input id="email" type="email" class="input" placeholder="E-mail" />
 
-      <div id="authMsg" class="auth-msg"></div>
-    </div>
-  </div>
+            <!-- Senha -->
+            <input id="password" type="password" class="input" placeholder="Senha" />
 
-  <!-- DASHBOARD PRINCIPAL -->
-  <div id="containerPrincipal" class="container-principal" style="display:none;">
+            <!-- Código -->
+            <div id="codigoField" style="display:none;">
+                <input id="codigo" type="text" class="input" placeholder="Código recebido no e-mail" />
+            </div>
 
-    <header class="cabecalho">
-      <div class="logo">
-        <h1><i class="fas fa-bolt"></i> Lanzaca iA de Palpites</h1>
-      </div>
+            <!-- ENVIAR CÓDIGO -->
+            <button id="btnSendCode" class="botao-login" style="display:none;">
+                Enviar código
+            </button>
 
-      <div class="info-usuario">
-        <div id="nomeUsuario" class="usuario-nome">Olá, usuário</div>
-        <div id="badgePlano" class="badge-plano"></div>
-        <button id="btnAdminToggle" class="botao-admin">Admin</button>
-        <button id="btnLogout" class="botao-logout">Sair</button>
-      </div>
-    </header>
+            <!-- BOTÃO LOGIN/CADASTRO -->
+            <button id="loginBtn" class="botao-login">
+                Entrar
+            </button>
 
-    <!-- Painel Admin -->
-    <div id="adminPanel" class="admin-panel" style="display:none;">
-      <h2>Usuários pendentes</h2>
-      <div id="pendingList">Nenhum cadastro pendente.</div>
-    </div>
-
-    <!-- Status simples só pra não ficar vazio -->
-    <div class="barra-status">
-      <div class="item-status">
-        <div class="valor-status" id="apostasIndividuais">0</div>
-        <div class="label-status">Individuais</div>
-      </div>
-      <div class="item-status">
-        <div class="valor-status" id="apostasMultiplas">0</div>
-        <div class="label-status">Múltiplas</div>
-      </div>
-      <div class="item-status">
-        <div class="valor-status" id="apostasSeguras">0</div>
-        <div class="label-status">Seguras</div>
-      </div>
-    </div>
-
-    <h2 class="titulo-secao"><i class="fas fa-crown"></i> TOP 5 DO DIA</h2>
-    <div id="topApostas" class="grid-apostas"></div>
-
-    <h2 class="titulo-secao"><i class="fas fa-shield-alt"></i> APOSTAS SEGURAS</h2>
-    <div id="gridApostasSeguras" class="grid-apostas"></div>
-
-    <h2 class="titulo-secao"><i class="fas fa-cubes"></i> APOSTAS MÚLTIPLAS</h2>
-    <div id="gridMultiplas" class="grid-apostas"></div>
-
-    <h2 class="titulo-secao"><i class="fas fa-list"></i> TODAS AS APOSTAS</h2>
-    <div id="gridTodasApostas" class="grid-apostas"></div>
-  </div>
-
-  <!-- PAYWALL / PLANO DE ACESSO (trial expirado) -->
-  <div id="paywallOverlay" class="paywall-overlay" style="display:none;">
-    <div class="paywall-card">
-      <button id="closePaywall" class="paywall-close">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-
-      <div class="paywall-top-icon">
-        <i class="fa-solid fa-medal"></i>
-      </div>
-
-      <h2>Desbloqueie o Acesso Completo</h2>
-      <p class="paywall-subtitle">
-        Seu período de teste terminou. Escolha um plano e faça o pagamento via PIX
-        para continuar recebendo os melhores palpites da Lanzaca iA.
-      </p>
-
-      <div id="trialInfo" class="paywall-trial-info"></div>
-
-      <div id="planList" class="paywall-plans"></div>
-
-      <div class="paywall-pix-box">
-        <div class="pix-label">Chave PIX para pagamento</div>
-        <div id="pixKey" class="pix-key"></div>
-        <div class="pix-help">
-          Envie o comprovante para o administrador. Assim que confirmado,
-          seu acesso é liberado ou renovado.
+            <!-- TOGGLE -->
+            <button id="showRegister" class="botao-toggle">
+                Cadastrar
+            </button>
         </div>
-      </div>
-
-      <button id="btnJaPaguei" class="botao-login">
-        Já paguei, vou enviar o comprovante
-      </button>
     </div>
-  </div>
 
-  <!-- Toast -->
-  <div id="toast" class="toast"></div>
+    <!-- ===========================
+         PAYWALL
+    ============================ -->
+    <div id="paywallOverlay" class="overlay">
+        <div class="paywall-box">
+            <h2>Assine para continuar</h2>
+            <p class="pix-info">Chave Pix:</p>
+            <p id="pixKey" class="pix-chave"></p>
 
-  <script src="/static/app.js"></script>
+            <div id="planList" class="plan-list"></div>
+
+            <button id="closePaywall" class="botao-cancelar">Fechar</button>
+        </div>
+    </div>
+
+    <!-- ===========================
+         PAINEL PRINCIPAL
+    ============================ -->
+    <div id="containerPrincipal" class="painel" style="display:none;">
+
+        <header class="topbar">
+            <div>
+                <span id="nomeUsuario" class="user-nome"></span>
+                <span id="badgePlano" class="badge-plano"></span>
+            </div>
+
+            <button id="btnLogout" class="botao-logout">Sair</button>
+        </header>
+
+        <!-- MENU -->
+        <nav class="menu">
+            <button class="menu-btn" onclick="mostrarAba('top3')">Top 3 do dia</button>
+            <button class="menu-btn" onclick="mostrarAba('multiplas')">Múltiplas</button>
+            <button class="menu-btn" onclick="mostrarAba('seguras')">Seguras</button>
+
+            <button id="btnAdminToggle" class="menu-btn admin-btn">Admin</button>
+        </nav>
+
+        <!-- CONTEÚDOS -->
+        <div class="conteudo">
+
+            <!-- TOP 3 -->
+            <div id="top3" class="aba">
+                <h2>Top 3 do dia</h2>
+                <div id="listaTop3" class="lista-jogos"></div>
+            </div>
+
+            <!-- MULTIPLAS -->
+            <div id="multiplas" class="aba" style="display:none;">
+                <h2>Múltiplas</h2>
+                <div id="listaMultiplas" class="lista-jogos"></div>
+            </div>
+
+            <!-- SEGURAS -->
+            <div id="seguras" class="aba" style="display:none;">
+                <h2>Seguras</h2>
+                <div id="listaSeguras" class="lista-jogos"></div>
+            </div>
+
+            <!-- ===== ADMIN ===== -->
+            <div id="adminPanel" class="admin-panel" style="display:none;">
+                <h2>Painel Admin</h2>
+                <div id="pendingList" class="pending-list"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script src="/static/app.js"></script>
 </body>
 </html>
