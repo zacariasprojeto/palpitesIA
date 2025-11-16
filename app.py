@@ -42,12 +42,15 @@ def login():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
-    dados = supabase.table("usuarios").select("*").eq("email", email).eq("senha", senha).execute()
+    dados = supabase.table("users").select("*").eq("email", email).eq("senha", senha).execute()
 
     if len(dados.data) == 0:
         return render_template("index.html", erro="Credenciais inválidas")
 
     user = dados.data[0]
+
+    if not user.get("confirmado", False):
+        return render_template("index.html", erro="Confirme seu e-mail antes de entrar.")
 
     session["email"] = user["email"]
     session["nome"] = user["nome"]
@@ -69,21 +72,22 @@ def cadastro():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
-    existe = supabase.table("usuarios").select("*").eq("email", email).execute()
+    existe = supabase.table("users").select("*").eq("email", email).execute()
     if len(existe.data) > 0:
         return render_template("cadastro.html", erro="Email já cadastrado")
 
     validade = (datetime.now() + timedelta(days=30)).date().isoformat()
 
-    supabase.table("usuarios").insert({
+    supabase.table("users").insert({
         "nome": nome,
         "celular": celular,
         "email": email,
         "senha": senha,
-        "validade": validade
+        "validade": validade,
+        "confirmado": False
     }).execute()
 
-    return redirect("/")
+    return redirect("/confirmar?email=" + email)
 
 # DASHBOARD (PROTEGIDA)
 @app.route("/dashboard")
