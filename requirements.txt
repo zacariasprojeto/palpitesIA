@@ -3,7 +3,6 @@ flask-cors
 gunicorn
 supabase
 python-dotenv
-qrcode
-pillow
-psycopg2-binary
+
+
 
