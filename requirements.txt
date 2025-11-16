@@ -5,3 +5,5 @@ supabase
 python-dotenv
 qrcode
 pillow
+psycopg2-binary
+
