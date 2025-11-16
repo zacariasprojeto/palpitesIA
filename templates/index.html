@@ -45,7 +45,7 @@
             color: #b3b3b3;
         }
 
-        /* 🔥 INPUTS NO TAMANHO PADRÃO */
+        /* 🔥 INPUTS PADRÃO */
         input {
             width: 92%;
             padding: 12px;
@@ -105,7 +105,7 @@
         <p class="sub">Sistema Premium de Análise de Apostas</p>
 
         <input type="text" id="email" placeholder="Usuário">
-        <input type="password" id="senha" placeholder="Senha">
+        <input type="password" id="password" placeholder="Senha">
 
         <button onclick="login()">➜ Entrar no Sistema</button>
 
@@ -119,19 +119,25 @@
     <script>
         async function login() {
             const email = document.getElementById("email").value.trim();
-            const senha = document.getElementById("senha").value.trim();
+            const password = document.getElementById("password").value.trim();
 
             const resp = await fetch("/api/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, senha })
+                body: JSON.stringify({ email, password })
             });
 
             const data = await resp.json();
 
             if (resp.status === 200) {
-                window.location.href = data.redirect;
-            } else {
+
+                // Salva o usuário para o dashboard
+                localStorage.setItem("user", JSON.stringify(data.user));
+
+                // Redireciona
+                window.location.href = "/dashboard";
+            } 
+            else {
                 document.getElementById("erro").style.display = "block";
             }
         }
