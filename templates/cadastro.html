@@ -3,131 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Criar Conta - Lanzaca IA</title>
+    <title>Confirmar Código - Lanzaca IA</title>
 
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #000;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
 
-        .card {
-            background: #0d0d0d;
-            width: 380px;
-            padding: 40px;
-            border-radius: 15px;
-            border: 2px solid #00ff88;
-            box-shadow: 0 0 25px #00ff88;
-            text-align: center;
-        }
+.card {
+    background: #0c0c0c;
+    padding: 40px;
+    width: 380px;
+    border-radius: 15px;
+    border: 2px solid #00ff88;
+    box-shadow: 0 0 25px #00ff88;
+    text-align: center;
+}
 
-        .logo {
-            font-size: 45px;
-            color: #00ff88;
-            margin-bottom: 15px;
-        }
+.logo {
+    font-size: 40px;
+    color: #00ff88;
+    margin-bottom: 10px;
+}
 
-        h2 {
-            color: #00ff88;
-            margin: 0;
-            font-size: 28px;
-        }
+h2 {
+    margin: 0;
+    font-size: 26px;
+    color: #00ff88;
+}
 
-        p.sub {
-            color: #b3b3b3;
-            font-size: 14px;
-            margin-bottom: 25px;
-            margin-top: 5px;
-        }
+p.sub {
+    margin-top: -5px;
+    font-size: 13px;
+    color: #b3b3b3;
+}
 
-        input {
-            width: 92%;
-            padding: 12px;
-            margin-top: 12px;
-            border-radius: 6px;
-            border: none;
-            background: #1a1a1a;
-            color: #fff;
-            font-size: 14px;
-        }
+input {
+    width: 92%;
+    padding: 10px;
+    margin-top: 12px;
+    border-radius: 6px;
+    border: 1px solid #1f1f1f;
+    background: #1a1a1a;
+    color: white;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 4px;
+}
 
-        input:focus {
-            outline: none;
-            border: 1px solid #00ff88;
-            box-shadow: 0 0 8px #00ff88;
-        }
+button {
+    width: 100%;
+    padding: 14px;
+    background: #00ff88;
+    color: black;
+    border: none;
+    margin-top: 18px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+}
 
-        button {
-            width: 100%;
-            padding: 14px;
-            background: #00ff88;
-            border: none;
-            border-radius: 6px;
-            color: #000;
-            font-size: 17px;
-            margin-top: 20px;
-            cursor: pointer;
-            font-weight: bold;
-        }
+button:hover {
+    background: #00cc6a;
+}
 
-        button:hover {
-            background: #00cc6a;
-        }
-
-        .link {
-            margin-top: 15px;
-            font-size: 14px;
-        }
-
-        .link a {
-            color: #00ff88;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .error {
-            margin-top: 12px;
-            color: #ff5050;
-            font-size: 14px;
-        }
-
-    </style>
+.error {
+    margin-top: 10px;
+    color: #ff5050;
+    font-size: 14px;
+}
+</style>
 </head>
+
 <body>
 
-    <div class="card">
-        <div class="logo">⚡</div>
+<div class="card">
+    <div class="logo">⚡</div>
 
-        <h2>Criar conta</h2>
-        <p class="sub">Acesso Premium por 30 dias grátis</p>
+    <h2>Confirmar código</h2>
+    <p class="sub">Enviamos um código de 6 dígitos para o seu email.</p>
 
-        <form method="POST" action="/cadastro" autocomplete="off">
+    <input id="codigo" maxlength="6" placeholder="000000">
 
-            <input type="text" name="nome" placeholder="Nome completo" autocomplete="off" required>
-            <input type="text" name="celular" placeholder="Celular" autocomplete="off" required>
-            <input type="email" name="email" placeholder="Email" autocomplete="off" required>
-            <input type="password" name="senha" placeholder="Senha" autocomplete="new-password" required>
+    <button onclick="confirmar()">Validar Código</button>
 
-            <button type="submit">Cadastrar</button>
+    <div id="erro" class="error" style="display:none;"></div>
+</div>
 
-        </form>
+<script>
+async function confirmar() {
+    const codigo = document.getElementById("codigo").value.trim();
+    const email = new URLSearchParams(window.location.search).get("email");
+    const erro = document.getElementById("erro");
 
-        <div class="link">
-            Já tem conta?
-            <a href="/">Entrar</a>
-        </div>
+    erro.style.display = "none";
 
-        {% if erro %}
-        <div class="error">{{ erro }}</div>
-        {% endif %}
+    if (codigo.length !== 6) {
+        erro.innerText = "Código inválido.";
+        erro.style.display = "block";
+        return;
+    }
 
-    </div>
+    const resp = await fetch("/api/confirmar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo, email })
+    });
+
+    const data = await resp.json();
+
+    if (resp.status === 200) {
+        alert("Conta confirmada com sucesso!");
+        window.location.href = "/";
+    } else {
+        erro.innerText = data.message || "Código incorreto.";
+        erro.style.display = "block";
+    }
+}
+</script>
 
 </body>
 </html>
