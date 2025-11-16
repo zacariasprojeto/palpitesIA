@@ -1,133 +1,170 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>⚡ Lanzaca iA de Palpites</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lanzaca IA - Login</title>
 
-  <link rel="stylesheet" href="/static/style.css">
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            background: #0c0c0c;
+            padding: 40px;
+            width: 380px;
+            border-radius: 15px;
+            border: 2px solid #00ff88;
+            box-shadow: 0 0 25px #00ff88;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 40px;
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 26px;
+            color: #00ff88;
+        }
+
+        p.sub {
+            margin-top: -5px;
+            font-size: 13px;
+            color: #b3b3b3;
+        }
+
+        /* inputs tamanho padrão (um pouco menores) */
+        input {
+            width: 92%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid #1f1f1f;
+            background: #1a1a1a;
+            color: white;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #00ff88;
+            color: black;
+            border: none;
+            margin-top: 18px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #00cc6a;
+        }
+
+        .link {
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        .link a {
+            color: #00ff88;
+            text-decoration: none;
+        }
+
+        .error {
+            margin-top: 10px;
+            color: #ff5050;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
 
-  <!-- TELA DE LOGIN / CADASTRO -->
-  <div id="authContainer" class="tela-login">
-    <div class="login-container">
-      <div class="login-logo">⚡</div>
-      <h1 class="login-titulo">Lanzaca iA de Palpites</h1>
+    <div class="card">
+        <div class="logo">⚡</div>
+        <h2>Lanzaca IA</h2>
+        <p class="sub">Sistema Premium de Análise de Apostas</p>
 
-      <div class="input-group">
-        <label for="email">Email</label>
-        <input id="email" type="email" placeholder="seuemail@exemplo.com"/>
-      </div>
+        <input type="text" id="email" placeholder="Usuário">
+        <input type="password" id="senha" placeholder="Senha">
 
-      <div class="input-group">
-        <label for="password">Senha</label>
-        <input id="password" type="password" placeholder="Sua senha"/>
-      </div>
+        <button onclick="login()">➜ Entrar no Sistema</button>
 
-      <button id="loginBtn" class="botao-login">Entrar</button>
-
-      <button id="showRegister"
-              class="botao-login botao-secundario">
-        Cadastrar
-      </button>
-
-      <div id="authMsg" class="auth-msg"></div>
-    </div>
-  </div>
-
-  <!-- DASHBOARD PRINCIPAL -->
-  <div id="containerPrincipal" class="container-principal" style="display:none;">
-
-    <header class="cabecalho">
-      <div class="logo">
-        <h1><i class="fas fa-bolt"></i> Lanzaca iA de Palpites</h1>
-      </div>
-
-      <div class="info-usuario">
-        <div id="nomeUsuario" class="usuario-nome">Olá, usuário</div>
-        <div id="badgePlano" class="badge-plano"></div>
-        <button id="btnAdminToggle" class="botao-admin">Admin</button>
-        <button id="btnLogout" class="botao-logout">Sair</button>
-      </div>
-    </header>
-
-    <!-- Painel Admin -->
-    <div id="adminPanel" class="admin-panel" style="display:none;">
-      <h2>Usuários pendentes</h2>
-      <div id="pendingList">Nenhum cadastro pendente.</div>
-    </div>
-
-    <!-- Status simples só pra não ficar vazio -->
-    <div class="barra-status">
-      <div class="item-status">
-        <div class="valor-status" id="apostasIndividuais">0</div>
-        <div class="label-status">Individuais</div>
-      </div>
-      <div class="item-status">
-        <div class="valor-status" id="apostasMultiplas">0</div>
-        <div class="label-status">Múltiplas</div>
-      </div>
-      <div class="item-status">
-        <div class="valor-status" id="apostasSeguras">0</div>
-        <div class="label-status">Seguras</div>
-      </div>
-    </div>
-
-    <h2 class="titulo-secao"><i class="fas fa-crown"></i> TOP 5 DO DIA</h2>
-    <div id="topApostas" class="grid-apostas"></div>
-
-    <h2 class="titulo-secao"><i class="fas fa-shield-alt"></i> APOSTAS SEGURAS</h2>
-    <div id="gridApostasSeguras" class="grid-apostas"></div>
-
-    <h2 class="titulo-secao"><i class="fas fa-cubes"></i> APOSTAS MÚLTIPLAS</h2>
-    <div id="gridMultiplas" class="grid-apostas"></div>
-
-    <h2 class="titulo-secao"><i class="fas fa-list"></i> TODAS AS APOSTAS</h2>
-    <div id="gridTodasApostas" class="grid-apostas"></div>
-  </div>
-
-  <!-- PAYWALL / PLANO DE ACESSO (trial expirado) -->
-  <div id="paywallOverlay" class="paywall-overlay" style="display:none;">
-    <div class="paywall-card">
-      <button id="closePaywall" class="paywall-close">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-
-      <div class="paywall-top-icon">
-        <i class="fa-solid fa-medal"></i>
-      </div>
-
-      <h2>Desbloqueie o Acesso Completo</h2>
-      <p class="paywall-subtitle">
-        Seu período de teste terminou. Escolha um plano e faça o pagamento via PIX
-        para continuar recebendo os melhores palpites da Lanzaca iA.
-      </p>
-
-      <div id="trialInfo" class="paywall-trial-info"></div>
-
-      <div id="planList" class="paywall-plans"></div>
-
-      <div class="paywall-pix-box">
-        <div class="pix-label">Chave PIX para pagamento</div>
-        <div id="pixKey" class="pix-key"></div>
-        <div class="pix-help">
-          Envie o comprovante para o administrador. Assim que confirmado,
-          seu acesso é liberado ou renovado.
+        <div class="link">
+            Não tem conta? <a href="/cadastro">Cadastrar</a>
         </div>
-      </div>
 
-      <button id="btnJaPaguei" class="botao-login">
-        Já paguei, vou enviar o comprovante
-      </button>
+        <div id="erro" class="error" style="display:none;"></div>
     </div>
-  </div>
 
-  <!-- Toast -->
-  <div id="toast" class="toast"></div>
+    <script>
+        async function login() {
+            const email = document.getElementById("email").value.trim();
+            const senha = document.getElementById("senha").value.trim();
+            const erroDiv = document.getElementById("erro");
+            erroDiv.style.display = "none";
+            erroDiv.textContent = "";
 
-  <script src="/static/app.js"></script>
+            if (!email || !senha) {
+                erroDiv.textContent = "Preencha usuário e senha.";
+                erroDiv.style.display = "block";
+                return;
+            }
+
+            try {
+                const resp = await fetch("/api/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, senha })
+                });
+
+                const data = await resp.json().catch(() => ({}));
+
+                if (resp.status === 200) {
+                    // Login OK -> vai para o dashboard (ou URL enviada pelo backend)
+                    window.location.href = data.redirect || "/dashboard";
+                } else if (resp.status === 403) {
+                    // Trial/plano vencido
+                    erroDiv.textContent =
+                        data.message ||
+                        "Seu período de acesso acabou. Realize o pagamento para continuar.";
+                    erroDiv.style.display = "block";
+                } else if (resp.status === 401) {
+                    // Credenciais inválidas
+                    erroDiv.textContent =
+                        data.message || "Credenciais inválidas.";
+                    erroDiv.style.display = "block";
+                } else {
+                    erroDiv.textContent =
+                        data.message || "Erro ao tentar fazer login.";
+                    erroDiv.style.display = "block";
+                }
+            } catch (e) {
+                console.error(e);
+                erroDiv.textContent = "Falha ao conectar com o servidor.";
+                erroDiv.style.display = "block";
+            }
+        }
+    </script>
+
 </body>
 </html>
