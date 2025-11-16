@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Criar Conta - Lanzaca IA</title>
+    <title>Confirmar Código - Lanzaca IA</title>
 
 <style>
 body {
@@ -48,12 +48,14 @@ p.sub {
 input {
     width: 92%;
     padding: 10px;
-    margin-top: 10px;
+    margin-top: 12px;
     border-radius: 6px;
     border: 1px solid #1f1f1f;
     background: #1a1a1a;
     color: white;
-    font-size: 16px;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 4px;
 }
 
 button {
@@ -73,12 +75,6 @@ button:hover {
     background: #00cc6a;
 }
 
-a {
-    color: #00ff88;
-    text-decoration: none;
-    font-size: 14px;
-}
-
 .error {
     margin-top: 10px;
     color: #ff5050;
@@ -92,49 +88,46 @@ a {
 <div class="card">
     <div class="logo">⚡</div>
 
-    <h2>Criar conta</h2>
-    <p class="sub">Acesso Premium por 30 dias grátis</p>
+    <h2>Confirmar código</h2>
+    <p class="sub">Enviamos um código de 6 dígitos para o seu email.</p>
 
-    <form action="/cadastro" method="POST">
+    <input id="codigo" maxlength="6" placeholder="000000">
 
-        <input name="nome" placeholder="Nome completo" required>
+    <button onclick="confirmar()">Validar Código</button>
 
-        <input id="celular" name="celular" placeholder="Celular (DDD + número)" maxlength="15" required>
-
-        <input name="email" type="email" placeholder="Email" required autocomplete="off">
-
-        <input name="senha" type="password" placeholder="Senha" required autocomplete="new-password">
-
-        <button type="submit">➜ Cadastrar</button>
-    </form>
-
-    <p style="margin-top: 10px;">
-        Já tem conta? <a href="/">Entrar</a>
-    </p>
-
-    {% if erro %}
-    <div class="error">{{ erro }}</div>
-    {% endif %}
+    <div id="erro" class="error" style="display:none;"></div>
 </div>
 
 <script>
-// MÁSCARA DE CELULAR AUTOMÁTICA
-document.getElementById("celular").addEventListener("input", function (e) {
-    let v = e.target.value.replace(/\D/g, "");
+async function confirmar() {
+    const codigo = document.getElementById("codigo").value.trim();
+    const email = new URLSearchParams(window.location.search).get("email");
+    const erro = document.getElementById("erro");
 
-    if (v.length > 11) v = v.slice(0, 11);
+    erro.style.display = "none";
 
-    if (v.length >= 1)
-        v = "(" + v;
+    if (codigo.length !== 6) {
+        erro.innerText = "Código inválido.";
+        erro.style.display = "block";
+        return;
+    }
 
-    if (v.length >= 3)
-        v = v.slice(0, 3) + ") " + v.slice(3);
+    const resp = await fetch("/api/confirmar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo, email })
+    });
 
-    if (v.length >= 10)
-        v = v.slice(0, 10) + "-" + v.slice(10);
+    const data = await resp.json();
 
-    e.target.value = v;
-});
+    if (resp.status === 200) {
+        alert("Conta confirmada com sucesso!");
+        window.location.href = "/";
+    } else {
+        erro.innerText = data.message || "Código incorreto.";
+        erro.style.display = "block";
+    }
+}
 </script>
 
 </body>
