@@ -1,73 +1,24 @@
 services:
-  # -----------------------------------------
-  # SERVIÇO WEB (Flask) — Porta padrão 10000
-  # -----------------------------------------
   - type: web
-    name: lanzaca-web
-    env: python
-    plan: starter
-    region: oregon
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn app:app"
+    name: lanzacaia-service
+    env: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
+      - key: PORT
+        value: 10000
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_KEY
+      - key: SUPABASE_ANON_KEY
         sync: false
-      - key: ODDS_API_KEY
+      - key: SUPABASE_SERVICE_KEY
         sync: false
-      - key: FOOTBALL_DATA_KEY
+      - key: EMAIL_SENDER
         sync: false
-      - key: API_SPORTS_KEY
+      - key: EMAIL_PASSWORD
         sync: false
-
-  # ----------------------------------------------------
-  # WORKER PARA RODAR SUA IA (ia_completa.py) AUTOMÁTICO
-  # ----------------------------------------------------
-  - type: worker
-    name: lanzaca-ia
-    env: python
-    plan: starter
-    region: oregon
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python ia_completa.py"
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: SUPABASE_URL
+      - key: FOOTBALL_API_KEY
         sync: false
-      - key: SUPABASE_KEY
+      - key: PIX_KEY
         sync: false
-      - key: ODDS_API_KEY
-        sync: false
-      - key: FOOTBALL_DATA_KEY
-        sync: false
-      - key: API_SPORTS_KEY
-        sync: false
-
-jobs:
-  # -----------------------------------------------------
-  # CRON JOB QUE EXECUTA A IA A CADA 5 MINUTOS AUTOMÁTICO
-  # -----------------------------------------------------
-  - name: atualizar-ia
-    type: cron
-    schedule: "*/5 * * * *"
-    env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python ia_completa.py"
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_KEY
-        sync: false
-      - key: ODDS_API_KEY
-        sync: false
-      - key: FOOTBALL_DATA_KEY
-        sync: false
-      - key: API_SPORTS_KEY
-        sync: false
-
