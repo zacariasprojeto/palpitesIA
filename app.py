@@ -1,55 +1,51 @@
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from supabase import create_client, Client
+from supabase import create_client
 from datetime import datetime, timedelta
 import random
 import smtplib
 from email.mime.text import MIMEText
-import os
+import requests
 
 app = Flask(__name__)
 CORS(app)
 
-# ============================
-#  SUPABASE
-# ============================
-supabase: Client = create_client(
-    os.getenv("SUPABASE_URL"),
-    os.getenv("SUPABASE_SERVICE_KEY")
-)
+# ==========================
+# CONFIG
+# ==========================
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+FOOTBALL_API_KEY = os.getenv("FOOTBALL_API_KEY")
 
-# ============================
-# 1) GERAR CÓDIGO
-# ============================
-def gerar_codigo():
-    return str(random.randint(100000, 999999))  # 6 dígitos
+EMAIL_SENDER = os.getenv("EMAIL_SENDER")       # seu email
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")   # senha do Gmail app
 
+PIX_CHAVE = "9aacbabc-39ad-4602-b73e-955703ec502e"
 
-# ============================
-# 2) ENVIAR E-MAIL (SMTP)
-# ============================
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# ==========================
+# FUNÇÃO: enviar email
+# ==========================
 def enviar_email(destino, codigo):
-    remetente = "SEU_EMAIL"
-    senha = "SUA_SENHA_DO_EMAIL"
-
-    msg = MIMEText(f"Seu código de confirmação é: {codigo}")
-    msg["Subject"] = "Código de Confirmação - Lanzaca IA"
-    msg["From"] = remetente
+    msg = MIMEText(f"Seu código de confirmação é:\n\n{codigo}\n\nLanzaca IA")
+    msg["Subject"] = "Código de verificação"
+    msg["From"] = EMAIL_SENDER
     msg["To"] = destino
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(remetente, senha)
+            smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
             smtp.send_message(msg)
         return True
     except Exception as e:
-        print("ERRO ENVIO EMAIL:", e)
+        print("ERRO EMAIL:", e)
         return False
 
-
-# ============================
-# 3) ROTA /send_code
-# ============================
+# ==========================
+# ROTA: enviar código
+# ==========================
 @app.route("/api/send_code", methods=["POST"])
 def send_code():
     data = request.json
@@ -58,31 +54,27 @@ def send_code():
     if not email:
         return jsonify({"error": "Email obrigatório"}), 400
 
-    # verificar se já existe usuário cadastrado
-    user = supabase.table("users").select("*").eq("email", email).execute()
-    if len(user.data) > 0:
-        return jsonify({"error": "Email já cadastrado"}), 400
+    # impedir duplicados
+    req = supabase.table("users").select("*").eq("email", email).execute()
+    if req.data:
+        return jsonify({"error": "Email já está cadastrado."}), 400
 
-    # gerar código
-    codigo = gerar_codigo()
+    codigo = str(random.randint(100000, 999999))
     expira = datetime.utcnow() + timedelta(minutes=10)
 
-    # salvar no banco
     supabase.table("confirm_codes").insert({
         "email": email,
         "code": codigo,
-        "expires_at": expira.isoformat()
+        "expires_at": expira.isoformat(),
     }).execute()
 
-    # enviar e-mail
     enviar_email(email, codigo)
 
-    return jsonify({"message": "Código enviado"}), 200
+    return jsonify({"message": "Código enviado!"})
 
-
-# ============================
-# 4) ROTA /verify_code
-# ============================
+# ==========================
+# CONFIRMAR CÓDIGO
+# ==========================
 @app.route("/api/verify_code", methods=["POST"])
 def verify_code():
     data = request.json
@@ -95,47 +87,117 @@ def verify_code():
     if not all([email, code, nome, celular, senha]):
         return jsonify({"error": "Dados incompletos"}), 400
 
-    # buscar código
-    registro = supabase.table("confirm_codes")\
-        .select("*")\
-        .eq("email", email)\
-        .eq("code", code)\
-        .eq("used", False)\
-        .execute()
+    consulta = supabase.table("confirm_codes").select("*") \
+        .eq("email", email).eq("code", code).eq("used", False).execute()
 
-    if len(registro.data) == 0:
-        return jsonify({"error": "Código inválido"}), 400
+    if not consulta.data:
+        return jsonify({"error": "Código incorreto"}), 400
 
-    registro = registro.data[0]
+    item = consulta.data[0]
 
-    # verificar expiração
-    if datetime.fromisoformat(registro["expires_at"].replace("Z", "")) < datetime.utcnow():
+    expira = datetime.fromisoformat(item["expires_at"].replace("Z", ""))
+    if expira < datetime.utcnow():
         return jsonify({"error": "Código expirado"}), 400
 
     # marcar como usado
-    supabase.table("confirm_codes")\
-        .update({"used": True})\
-        .eq("id", registro["id"])\
-        .execute()
+    supabase.table("confirm_codes").update({"used": True}) \
+        .eq("id", item["id"]).execute()
 
-    # criar usuário pendente
+    # criar usuário
+    trial_ate = (datetime.utcnow() + timedelta(days=30)).date()
+
     supabase.table("users").insert({
-        "email": email,
         "nome": nome,
         "celular": celular,
+        "email": email,
         "senha": senha,
-        "role": "user",
+        "verificado": True,
+        "trial_ate": trial_ate.isoformat(),
+        "plano": "trial",
         "status": "ativo"
     }).execute()
 
-    # gerar 30 dias grátis
-    supabase.table("pagamentos").insert({
-        "email": email,
-        "plano": "Teste grátis",
-        "valor": 0,
-        "dias": 30,
-        "status": "ativo",
-        "created_at": datetime.utcnow().isoformat()
-    }).execute()
+    return jsonify({"message": "Conta criada e trial liberado!"})
 
-    return jsonify({"message": "Cadastro confirmado! Acesso liberado."}), 200
+# ==========================
+# LOGIN
+# ==========================
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.json
+    email = data.get("email")
+    senha = data.get("senha")
+
+    user = supabase.table("users").select("*").eq("email", email).eq("senha", senha).execute()
+    if not user.data:
+        return jsonify({"status": "error", "msg": "Credenciais inválidas"})
+
+    user = user.data[0]
+
+    if user["plano"] == "trial":
+        if datetime.fromisoformat(str(user["trial_ate"])) < datetime.utcnow():
+            return jsonify({"status": "blocked", "msg": "Trial expirado", "user": user})
+
+    return jsonify({"status": "ok", "user": user})
+
+# ==========================
+# API FOOTBALL
+# ==========================
+def puxar(endpoint):
+    headers = {"x-apisports-key": FOOTBALL_API_KEY}
+    r = requests.get(f"https://v3.football.api-sports.io/{endpoint}", headers=headers)
+    return r.json()
+
+# TOP 3 DO DIA
+@app.route("/api/top")
+def top():
+    data = puxar("predictions?league=71&season=2023")
+    return jsonify(data)
+
+# ==========================
+# PAYWALL
+# ==========================
+@app.route("/api/paywall", methods=["GET"])
+def paywall():
+    return jsonify({
+        "pix": PIX_CHAVE,
+        "planos": [
+            {"label": "Mensal", "price": 49.90, "dias": 30},
+            {"label": "Trimestral", "price": 129.90, "dias": 90},
+            {"label": "Semestral", "price": 219.90, "dias": 180},
+        ]
+    })
+
+# ==========================
+# ADMIN: USUÁRIOS PENDENTES
+# ==========================
+@app.route("/api/pending", methods=["GET"])
+def pending():
+    users = supabase.table("users").select("*").eq("status", "pendente").execute()
+    return jsonify({"status": "ok", "pending": users.data})
+
+# ==========================
+# APROVAR USUÁRIO
+# ==========================
+@app.route("/api/approve", methods=["POST"])
+def approve():
+    email = request.json.get("email")
+    supabase.table("users").update({"status": "ativo"}).eq("email", email).execute()
+    return jsonify({"status": "ok", "msg": "Usuário aprovado!"})
+
+# ==========================
+# LOGOUT
+# ==========================
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    return jsonify({"ok": True})
+
+# ==========================
+# SERVIDOR
+# ==========================
+@app.route("/")
+def home():
+    return "Backend OK"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
