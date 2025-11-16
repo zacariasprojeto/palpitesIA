@@ -236,4 +236,126 @@ def home():
         "seguras": qtd_seguras,
         "multiplas": qtd_multiplas
     })
+    # -------------------------------
+# PIX + PLANOS + PAGAMENTOS
+# -------------------------------
+import qrcode
+import base64
+from io import BytesIO
+
+
+# Função para gerar QR Code PIX
+def gerar_qr_code_pix(valor, descricao, chave_pix):
+    payload = f"""
+000201
+010212
+52040000
+5303986
+5802BR
+5913Lanzaca IA
+6009SAO PAULO
+62100506{descricao}
+540{len(str(valor))}{valor}
+7014{chave_pix}
+"""
+
+    payload = payload.replace("\n", "")
+    qr = qrcode.make(payload)
+    buffer = BytesIO()
+    qr.save(buffer, format="PNG")
+    qr_code_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    return qr_code_base64
+
+
+# -------------------------------
+# ROTA: GERAR PIX DO PLANO
+# -------------------------------
+@app.route("/api/pagamento", methods=["POST"])
+def pagamento():
+    data = request.json
+    email = data.get("email")
+    plano = data.get("plano")  # mensal / trimestral / semestral
+
+    planos = {
+        "mensal": {
+            "valor": 49.90,
+            "dias": 30
+        },
+        "trimestral": {
+            "valor": 129.90,
+            "dias": 90
+        },
+        "semestral": {
+            "valor": 219.90,
+            "dias": 180
+        }
+    }
+
+    if plano not in planos:
+        return jsonify({"error": "Plano inválido"}), 400
+
+    valor = planos[plano]["valor"]
+    dias = planos[plano]["dias"]
+
+    qr_code = gerar_qr_code_pix(
+        valor = valor,
+        descricao = f"PLANO-{plano.upper()}",
+        chave_pix = PIX_KEY
+    )
+
+    # salvar pedido pendente no BD
+    supabase.table("pagamentos").insert({
+        "email": email,
+        "plano": plano,
+        "valor": valor,
+        "dias": dias,
+        "status": "pendente",
+        "created_at": datetime.utcnow().isoformat()
+    }).execute()
+
+    return jsonify({
+        "qr_code": qr_code,
+        "valor": valor,
+        "dias": dias,
+        "msg": "Pagamento gerado com sucesso"
+    })
+
+
+# ----------------------------------------
+# VERIFICAR PAGAMENTO (chamado pelo client)
+# ----------------------------------------
+@app.route("/api/verificar-pagamento", methods=["POST"])
+def verificar_pagamento():
+    email = request.json.get("email")
+
+    consulta = (
+        supabase.from_("pagamentos")
+        .select("*")
+        .eq("email", email)
+        .eq("status", "pago")
+        .order("id", desc=True)
+        .limit(1)
+        .execute()
+    )
+
+    if not consulta.data:
+        return jsonify({"pago": False})
+
+    ultimo = consulta.data[0]
+
+    # atualizar acesso do usuário
+    novo_fim = datetime.utcnow() + timedelta(days=ultimo["dias"])
+
+    supabase.table("usuarios").update({
+        "acesso_liberado": True,
+        "fim_acesso": novo_fim.isoformat()
+    }).eq("email", email).execute()
+
+    return jsonify({
+        "pago": True,
+        "mensagem": "Pagamento confirmado!",
+        "dias": ultimo["dias"]
+    })
+
 
