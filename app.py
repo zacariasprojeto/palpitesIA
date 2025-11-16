@@ -2,17 +2,16 @@ from flask import Flask, render_template, request, redirect, session, jsonify
 from supabase import create_client, Client
 from datetime import datetime, timedelta
 import random
-import smtplib
 
 app = Flask(__name__)
 app.secret_key = "LanzacaIA2025"
 
 # ==============================
-# SUPABASE
+# SUPABASE CONFIG
 # ==============================
 
-SUPABASE_URL = "https://tqdhkgpknttphjmfltbg.supabase.co"
-SUPABASE_KEY = "SUA_KEY_AQUI"  # <<< COLOQUE SUA CHAVE AQUI
+SUPABASE_URL = "https://kctzwwczcthjmjdgvxuks.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtjdHp3d2N6Y3Roam1kZ3Z4dWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5ODIwNDYsImV4cCI6MjA3ODU1ODA0Nn0.HafwqrEnJ5Slm3wRg4_KEvGHiTuNJafztVfWbuSZ_84"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -22,20 +21,19 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ==============================
 
 def gerar_codigo():
-    """Gera um código de 6 dígitos"""
     return random.randint(100000, 999999)
 
 def enviar_email(email, codigo):
-    """FAKE — Apenas printa o código no terminal (Render mostra nos logs)."""
+    # No Render vai aparecer nos LOGS!
     print("\n==============================")
-    print("⚡ CÓDIGO DE CONFIRMAÇÃO LANZACA IA ⚡")
-    print(f"Email: {email}")
-    print(f"Código: {codigo}")
+    print("⚡ LANZACA IA — CÓDIGO DE CONFIRMAÇÃO ⚡")
+    print(f"E-mail: {email}")
+    print(f"Código enviado: {codigo}")
     print("==============================\n")
 
 
 # ==============================
-# ROTAS – LOGIN
+# LOGIN
 # ==============================
 
 @app.route("/", methods=["GET"])
@@ -61,7 +59,7 @@ def login():
 
 
 # ==============================
-# ROTAS – CADASTRO
+# CADASTRO
 # ==============================
 
 @app.route("/cadastro", methods=["GET", "POST"])
@@ -74,17 +72,17 @@ def cadastro():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
-    # Existe usuário definitivo?
+    # Se já existe usuário definitivo
     existe = supabase.table("users").select("*").eq("email", email).execute()
     if len(existe.data) > 0:
-        return render_template("cadastro.html", erro="Este email já está cadastrado.")
+        return render_template("cadastro.html", erro="E-mail já cadastrado.")
 
-    # Existe pendente?
+    # Se existe pendente remove e recria
     pend = supabase.table("pending_users").select("*").eq("email", email).execute()
     if len(pend.data) > 0:
         supabase.table("pending_users").delete().eq("email", email).execute()
 
-    # Salvar pendente
+    # salva pendente
     supabase.table("pending_users").insert({
         "nome": nome,
         "celular": celular,
@@ -92,24 +90,23 @@ def cadastro():
         "senha": senha
     }).execute()
 
-    # Gerar código
+    # código
     codigo = gerar_codigo()
 
-    # Registrar código
+    # salva código
     supabase.table("confirm_codes").insert({
         "email": email,
         "codigo": codigo
     }).execute()
 
-    # Enviar (fake)
+    # envia fake
     enviar_email(email, codigo)
 
-    # Redirecionar para a página de confirmação
     return redirect(f"/confirmar?email={email}")
 
 
 # ==============================
-# ROTAS – CONFIRMAÇÃO DE CÓDIGO
+# CONFIRMAR CÓDIGO
 # ==============================
 
 @app.route("/confirmar", methods=["GET"])
@@ -127,19 +124,18 @@ def api_confirmar():
     if not codigo or not email:
         return jsonify({"message": "Dados incompletos"}), 400
 
-    consulta = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo).execute()
+    busca = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo).execute()
 
-    if len(consulta.data) == 0:
+    if len(busca.data) == 0:
         return jsonify({"message": "Código incorreto"}), 401
 
-    # Buscar pendente
     pend = supabase.table("pending_users").select("*").eq("email", email).execute()
+
     if len(pend.data) == 0:
         return jsonify({"message": "Nenhum cadastro pendente encontrado"}), 404
 
     usuario = pend.data[0]
 
-    # Salvar em users (definitivo)
     supabase.table("users").insert({
         "nome": usuario["nome"],
         "celular": usuario["celular"],
@@ -148,7 +144,7 @@ def api_confirmar():
         "is_admin": False
     }).execute()
 
-    # Remover pendente e código usado
+    # limpar pendência e código
     supabase.table("pending_users").delete().eq("email", email).execute()
     supabase.table("confirm_codes").delete().eq("email", email).execute()
 
@@ -156,7 +152,7 @@ def api_confirmar():
 
 
 # ==============================
-# ROTAS – DASHBOARD / LOGOUT
+# DASHBOARD
 # ==============================
 
 @app.route("/dashboard")
@@ -166,6 +162,10 @@ def dashboard():
     return render_template("dashboard.html", nome=session["nome"])
 
 
+# ==============================
+# LOGOUT
+# ==============================
+
 @app.route("/logout")
 def logout():
     session.clear()
@@ -173,7 +173,7 @@ def logout():
 
 
 # ==============================
-# RENDER
+# RUN
 # ==============================
 
 if __name__ == "__main__":
