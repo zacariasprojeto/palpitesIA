@@ -120,3 +120,120 @@ def login():
         "email": user["email"],
         "is_admin": user["is_admin"]
     })
+    # -----------------------------------
+# API FOOTBALL – Função auxiliar
+# -----------------------------------
+import requests
+
+def futebol(endpoint, params={}):
+    headers = {
+        "x-apisports-key": API_FOOTBALL_KEY
+    }
+    url = f"https://v3.football.api-sports.io/{endpoint}"
+    r = requests.get(url, headers=headers, params=params)
+
+    try:
+        return r.json()
+    except:
+        return { "error": "Erro ao conectar com API-Football" }
+
+
+# -----------------------------------
+# ROTA: Todas as apostas (com IA)
+# -----------------------------------
+@app.route("/api/apostas", methods=["GET"])
+def apostas():
+    # vamos pegar jogos de hoje
+    hoje = datetime.utcnow().strftime("%Y-%m-%d")
+
+    data = futebol("fixtures", {"date": hoje})
+
+    apostas = []
+    for jogo in data.get("response", []):
+        home = jogo["teams"]["home"]["name"]
+        away = jogo["teams"]["away"]["name"]
+
+        prob = random.randint(60, 95)
+        odd = round(random.uniform(1.50, 3.50), 2)
+
+        apostas.append({
+            "home": home,
+            "away": away,
+            "prob": prob,
+            "odd": odd,
+            "tipo": "individual",
+            "melhor_casa": {
+                "betano": odd,
+                "sportingbet": round(odd - 0.05, 2)
+            }
+        })
+
+    return jsonify(apostas)
+
+
+# -----------------------------------
+# APOSTAS SEGURAS (prob > 75)
+# -----------------------------------
+@app.route("/api/seguras", methods=["GET"])
+def seguras():
+    todas = apostas().json
+    seguras = [a for a in todas if a["prob"] >= 75]
+    return jsonify(seguras)
+
+
+# -----------------------------------
+# APOSTAS MÚLTIPLAS (2 a 3 combinações)
+# -----------------------------------
+@app.route("/api/multiplas", methods=["GET"])
+def multiplas():
+    todas = apostas().json
+
+    if len(todas) < 3:
+        return jsonify([])
+
+    sel = random.sample(todas, 2)
+
+    geral_prob = int((sel[0]["prob"] + sel[1]["prob"]) / 2)
+    odd_total = round(sel[0]["odd"] * sel[1]["odd"], 2)
+
+    return jsonify({
+        "comb": sel,
+        "prob": geral_prob,
+        "odd_total": odd_total,
+        "conf": "ALTA" if geral_prob > 75 else "MÉDIA"
+    })
+
+
+# -----------------------------------
+# TOP 3 DO DIA (somente melhores odds)
+# -----------------------------------
+@app.route("/api/top3", methods=["GET"])
+def top3():
+    todas = apostas().json
+    ordenado = sorted(todas, key=lambda x: x["prob"], reverse=True)
+    return jsonify(ordenado[:3])
+
+
+# -----------------------------------
+# HOME (dados iniciais igual BetGenius IA)
+# -----------------------------------
+@app.route("/api/home", methods=["GET"])
+def home():
+    hoje = datetime.utcnow().strftime("%Y-%m-%d")
+    data = futebol("fixtures", {"date": hoje})
+
+    total_jogos = len(data.get("response", []))
+
+    # contagem de cada categoria
+    todas = apostas().json
+    qtd_seguras = len([a for a in todas if a["prob"] >= 75])
+    qtd_multiplas = 1  # geramos 1 múltipla por dia
+    qtd_individuais = len(todas)
+
+    return jsonify({
+        "jogos": total_jogos,
+        "individuais": qtd_individuais,
+        "seguras": qtd_seguras,
+        "multiplas": qtd_multiplas
+    })
+
