@@ -1,135 +1,125 @@
-# =============================================================
+# ===============================================================
 # games_engine.py
-# Captura todos os jogos do dia da API-Football e salva no Supabase
-# 100% em português
-# =============================================================
+# Atualiza lista de jogos do dia a partir da API-Football
+# e salva na tabela "games" do Supabase
+# ===============================================================
 
 import requests
 from datetime import datetime
-from supabase import create_client
+from supabase import create_client, Client
 import os
 
-# -------------------------------------------
+# ------------------------------------------
 # CONFIGURAÇÕES
-# -------------------------------------------
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+# ------------------------------------------
 
-API_FOOTBALL = "ed6c277617a7e4bfb0ad840ecedce5fc"
+API_KEY = "ed6c277617a7e4bfb0ad840ecedce5fc"
 BASE_URL = "https://v3.football.api-sports.io"
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE = os.getenv("SUPABASE_SERVICE_KEY")
 
-# Ligas importantes (pode adicionar mais depois)
-LIGAS_VALIDAS = [
-    71,   # Brasileirão Série A
-    72,   # Brasileirão Série B
-    6,    # Libertadores
-    9,    # Sul-Americana
-    39,   # Premier League
-    140,  # La Liga
-    135,  # Serie A Itália
-    61,   # Ligue 1 França
-    78,   # Bundesliga
-    94,   # Liga Portugal
-    2,    # Champions League
-    3,    # Europa League
-]
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE)
 
 
-# =============================================================
-# FUNÇÃO: pegar jogos do dia
-# =============================================================
+# ------------------------------------------
+# Função auxiliar: normalizar nomes
+# ------------------------------------------
+def limpar_nome(texto):
+    if not texto:
+        return ""
+    return texto.replace("'", "").replace('"', "").strip()
+
+
+# ------------------------------------------
+# Buscar todos os jogos do dia
+# ------------------------------------------
 def buscar_jogos_do_dia():
     hoje = datetime.utcnow().strftime("%Y-%m-%d")
 
     url = f"{BASE_URL}/fixtures?date={hoje}"
-    headers = {"x-apisports-key": API_FOOTBALL}
 
-    print(f"🔍 Buscando jogos do dia ({hoje})...")
+    headers = {
+        "x-apisports-key": API_KEY
+    }
 
-    r = requests.get(url, headers=headers).json()
+    r = requests.get(url, headers=headers)
+    dados = r.json()
 
-    if "response" not in r:
-        print("❌ Erro na API")
-        return []
+    print("STATUS:", r.status_code)
+    print("Jogos encontrados:", len(dados.get("response", [])))
 
-    jogos = r["response"]
-    print(f"📌 Total bruto encontrado: {len(jogos)}")
-
-    # Filtro por ligas importantes
-    jogos_filtrados = [
-        j for j in jogos if j["league"]["id"] in LIGAS_VALIDAS
-    ]
-
-    print(f"✔ Jogos em ligas importantes: {len(jogos_filtrados)}")
-
-    return jogos_filtrados
+    return dados.get("response", [])
 
 
-# =============================================================
-# FUNÇÃO: salvar jogo na tabela "games"
-# =============================================================
+# ------------------------------------------
+# Inserir jogo no banco
+# ------------------------------------------
 def salvar_jogo(jogo):
     fixture = jogo["fixture"]
     teams = jogo["teams"]
     league = jogo["league"]
 
-    home = teams["home"]
-    away = teams["away"]
-
-    game_data = {
-        "fixture_id": fixture["id"],
-        "league_id": league["id"],
-        "league_name": league["name"],
-        "round": league.get("round", ""),
-        "data_jogo": fixture["date"],
+    jogo_data = {
+        "api_id": fixture["id"],
+        "date": fixture["date"],
+        "liga_id": league["id"],
+        "liga_nome": limpar_nome(league["name"]),
+        "liga_pais": limpar_nome(league["country"]),
+        "time_casa": limpar_nome(teams["home"]["name"]),
+        "time_fora": limpar_nome(teams["away"]["name"]),
         "status": fixture["status"]["short"],
-
-        "home_id": home["id"],
-        "home_name": home["name"],
-        "home_logo": home["logo"],
-
-        "away_id": away["id"],
-        "away_name": away["name"],
-        "away_logo": away["logo"],
     }
 
-    # Remover duplicações
-    existe = (
+    # Verificar se já existe no banco
+    existente = (
         supabase.table("games")
         .select("*")
-        .eq("fixture_id", fixture["id"])
+        .eq("api_id", fixture["id"])
         .execute()
     )
 
-    if len(existe.data) > 0:
-        print(f"⏭ Jogo já existe: {home['name']} vs {away['name']}")
-        return
+    if len(existente.data) > 0:
+        print("⚠ Já existe:", fixture["id"])
+        return existente.data[0]["id"]
 
-    supabase.table("games").insert(game_data).execute()
+    # Inserir novo
+    novo = (
+        supabase.table("games")
+        .insert(jogo_data)
+        .execute()
+    )
 
-    print(f"✅ Jogo salvo: {home['name']} vs {away['name']}")
+    print("✔ Inserido:", fixture["id"])
+    return novo.data[0]["id"]
 
 
-# =============================================================
-# MOTOR PRINCIPAL
-# =============================================================
+# ------------------------------------------
+# PROCESSO PRINCIPAL
+# ------------------------------------------
 def atualizar_jogos():
+    print("\n==============================")
+    print(" ATUALIZANDO JOGOS DO DIA")
+    print("==============================\n")
+
     jogos = buscar_jogos_do_dia()
 
-    if not jogos:
-        print("⚠ Nenhum jogo de ligas importantes hoje.")
-        return
-
-    print("📥 Salvando jogos no Supabase...")
+    ids = []
 
     for jogo in jogos:
-        salvar_jogo(jogo)
+        game_id = salvar_jogo(jogo)
+        ids.append(game_id)
 
-    print("\n🎉 FINALIZADO! Jogos atualizados com sucesso.\n")
+    print("\n==============================")
+    print(" FINALIZADO!")
+    print(f" Jogos salvos no banco: {len(ids)}")
+    print("==============================\n")
+
+    return ids
 
 
-# Executar se chamado diretamente
+# ------------------------------------------
+# Execução direta
+# ------------------------------------------
 if __name__ == "__main__":
     atualizar_jogos()
