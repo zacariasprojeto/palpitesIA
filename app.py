@@ -14,12 +14,12 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "chave_default")
 # ==============================
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_ANON = os.getenv("SUPABASE_ANON_KEY")   # chave correta !!
+SUPABASE_SERVICE = os.getenv("SUPABASE_SERVICE_KEY")
 
-if not SUPABASE_URL or not SUPABASE_ANON:
-    raise Exception("Variáveis SUPABASE_URL ou SUPABASE_ANON_KEY não configuradas!")
+if not SUPABASE_URL or not SUPABASE_SERVICE:
+    raise Exception("Erro: SUPABASE_URL ou SUPABASE_SERVICE_KEY não configuradas!")
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE)
 
 # ==============================
 # EMAIL CONFIG (BREVO)
