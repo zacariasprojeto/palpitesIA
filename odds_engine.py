@@ -171,6 +171,7 @@ def processar_odds(game_id):
 
     print(f"Finalizado!")
     return True
+
 # ============================================================
 # 4) Função principal: salvar odds no Supabase
 # ============================================================
