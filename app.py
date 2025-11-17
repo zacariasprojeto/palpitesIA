@@ -83,7 +83,7 @@ def login():
         supabase.table("users")
         .select("*")
         .eq("email", email)
-        .eq("senha", senha)
+        .eq("senha", senha)   # busca pela senha simples
         .execute()
     )
 
@@ -176,13 +176,16 @@ def api_confirmar():
 
     usuario = pendente.data[0]
 
-    # Move para tabela definitiva
+    # SALVAMENTO FINAL — AGORA ESCREVENDO 'password' OBRIGATÓRIO
     supabase.table("users").insert({
         "nome": usuario["nome"],
         "celular": usuario["celular"],
         "email": usuario["email"],
-        "senha": usuario["senha"],
-        "is_admin": False
+        "senha": usuario["senha"],          # sua coluna custom
+        "password": usuario["senha"],       # ← OBRIGATÓRIO NO SUPABASE
+        "is_admin": False,
+        "status": "ativo",                  # se existir na tabela
+        "plano": "trial"                    # se existir na tabela
     }).execute()
 
     # Remove pendente e código
