@@ -1,52 +1,169 @@
-<script>
-document.getElementById("formConfirmar").addEventListener("submit", async function(e) {
-    e.preventDefault();
+<!DOCTYPE html>
+<html lang="pt-BR">
 
-    const codigo = document.getElementById("codigo").value;
-    const email = document.getElementById("email").value;
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmar Código - Lanzaca IA</title>
 
-    const resposta = await fetch("/api/confirmar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codigo, email })
-    });
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #000;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
 
-    const dados = await resposta.json();
+        .card {
+            width: 380px;
+            background: #0c0c0c;
+            padding: 40px;
+            border-radius: 18px;
+            text-align: center;
+            border: 2px solid #00ff88;
+            box-shadow: 0 0 35px #00ff88;
+        }
 
-    const msgBox = document.getElementById("mensagem");
+        .logo {
+            font-size: 45px;
+            color: #00ff88;
+            margin-bottom: 5px;
+        }
 
-    if (resposta.status === 200) {
-        msgBox.innerHTML = `
-            <div style="
-                background: #00ff88;
-                color: #000;
-                padding: 12px;
-                font-weight: bold;
-                border-radius: 8px;
-                margin-bottom: 15px;
-                text-align:center;">
-                ✅ Cadastro realizado com sucesso!
-            </div>
-        `;
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            color: #00ff88;
+        }
 
-        // Redireciona para login após 2 segundos
-        setTimeout(() => {
-            window.location.href = "/login";
-        }, 2000);
+        p.sub {
+            margin-top: 3px;
+            color: #b3b3b3;
+            font-size: 14px;
+        }
 
-    } else {
-        msgBox.innerHTML = `
-            <div style="
-                background: #ff4444;
-                color: white;
-                padding: 12px;
-                font-weight: bold;
-                border-radius: 8px;
-                margin-bottom: 15px;
-                text-align:center;">
-                ❌ ${dados.message}
-            </div>
-        `;
-    }
-});
-</script>
+        input {
+            width: 92%;
+            padding: 12px;
+            margin-top: 18px;
+            border-radius: 6px;
+            background: #1a1a1a;
+            border: 1px solid #222;
+            color: white;
+            font-size: 22px;
+            text-align: center;
+            letter-spacing: 3px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 22px;
+            background-color: #00ff88;
+            color: #000;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #00cc6a;
+        }
+
+        #mensagem {
+            margin-top: 20px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="card">
+
+        <div class="logo">⚡</div>
+        <h1>Confirmar código</h1>
+        <p class="sub">Enviamos um código para o seu e-mail.</p>
+
+        <form id="formConfirmar">
+
+            <!-- Código -->
+            <input type="text" id="codigo" maxlength="6" placeholder="Digite o código">
+
+            <!-- Email oculto -->
+            <input type="hidden" id="email" value="{{ email }}">
+
+            <button type="submit">Validar Código</button>
+
+        </form>
+
+        <!-- Mensagens -->
+        <div id="mensagem"></div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!--                     SCRIPT OFICIAL                    -->
+    <!-- ===================================================== -->
+    <script>
+        document.getElementById("formConfirmar").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const codigo = document.getElementById("codigo").value;
+            const email = document.getElementById("email").value;
+
+            const resposta = await fetch("/api/confirmar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ codigo, email })
+            });
+
+            const dados = await resposta.json();
+            const msgBox = document.getElementById("mensagem");
+
+            if (resposta.status === 200) {
+                msgBox.innerHTML = `
+                    <div style="
+                        background: #00ff88;
+                        color: #000;
+                        padding: 12px;
+                        font-weight: bold;
+                        border-radius: 8px;
+                        margin-bottom: 15px;
+                        text-align:center;">
+                        ✅ Cadastro realizado com sucesso!
+                    </div>
+                `;
+
+                // Redirecionar após 2s
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 2000);
+
+            } else {
+                msgBox.innerHTML = `
+                    <div style="
+                        background: #ff4444;
+                        color: white;
+                        padding: 12px;
+                        font-weight: bold;
+                        border-radius: 8px;
+                        margin-bottom: 15px;
+                        text-align:center;">
+                        ❌ ${dados.message}
+                    </div>
+                `;
+            }
+        });
+    </script>
+
+</body>
+
+</html>
