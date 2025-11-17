@@ -83,7 +83,7 @@ def login():
         supabase.table("users")
         .select("*")
         .eq("email", email)
-        .eq("senha", senha)   # busca pela senha simples
+        .eq("senha", senha)
         .execute()
     )
 
@@ -91,8 +91,12 @@ def login():
         return render_template("index.html", erro="Erro no login.")
 
     user = dados.data[0]
+
+    # ========= AQUI É ONDE ALTEREI ========= #
     session["email"] = user["email"]
     session["nome"] = user["nome"]
+    session["is_admin"] = user.get("is_admin", False)  # <— ADICIONADO
+    # ======================================= #
 
     return redirect("/dashboard")
 
@@ -107,15 +111,12 @@ def cadastro():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
-    # 1 — Verifica se já existe user
     existe = supabase.table("users").select("*").eq("email", email).execute()
     if len(existe.data) > 0:
         return render_template("cadastro.html", erro="Email já cadastrado.")
 
-    # Remove qualquer pendente antigo
     supabase.table("pending_users").delete().eq("email", email).execute()
 
-    # Insere no pending
     supabase.table("pending_users").insert({
         "nome": nome,
         "celular": celular,
@@ -123,7 +124,6 @@ def cadastro():
         "senha": senha
     }).execute()
 
-    # Gera e salva código
     codigo = gerar_codigo()
 
     supabase.table("confirm_codes").delete().eq("email", email).execute()
@@ -132,7 +132,6 @@ def cadastro():
         "codigo": str(codigo)
     }).execute()
 
-    # Envia e-mail
     enviar_email(email, codigo)
 
     return redirect(f"/confirmar?email={email}")
@@ -176,19 +175,18 @@ def api_confirmar():
 
     usuario = pendente.data[0]
 
-    # SALVAMENTO FINAL — AGORA ESCREVENDO 'password' OBRIGATÓRIO
+    # SALVAMENTO FINAL
     supabase.table("users").insert({
         "nome": usuario["nome"],
         "celular": usuario["celular"],
         "email": usuario["email"],
-        "senha": usuario["senha"],          # sua coluna custom
-        "password": usuario["senha"],       # ← OBRIGATÓRIO NO SUPABASE
+        "senha": usuario["senha"],
+        "password": usuario["senha"],   # coluna obrigatória do Supabase
         "is_admin": False,
-        "status": "ativo",                  # se existir na tabela
-        "plano": "trial"                    # se existir na tabela
+        "status": "ativo",
+        "plano": "trial"
     }).execute()
 
-    # Remove pendente e código
     supabase.table("pending_users").delete().eq("email", email).execute()
     supabase.table("confirm_codes").delete().eq("email", email).execute()
 
@@ -197,9 +195,17 @@ def api_confirmar():
 
 @app.route("/dashboard")
 def dashboard():
+
+    # ============= AQUI ALTEREI ============= #
     if "email" not in session:
         return redirect("/")
-    return render_template("dashboard.html", nome=session["nome"])
+
+    return render_template(
+        "dashboard.html",
+        nome=session["nome"],
+        is_admin=session.get("is_admin", False)   # <— ADICIONADO
+    )
+    # ======================================== #
 
 
 @app.route("/logout")
@@ -208,7 +214,6 @@ def logout():
     return redirect("/")
 
 
-# RENDER — PORTA OBRIGATÓRIA
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
