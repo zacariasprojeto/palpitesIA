@@ -1,6 +1,6 @@
 # ===============================================================
 # games_engine.py
-# Atualiza lista de jogos do dia a partir da API-Football
+# Atualiza lista de jogos do dia usando API-Football
 # e salva na tabela "games" do Supabase
 # ===============================================================
 
@@ -13,7 +13,7 @@ import os
 # CONFIGURAÇÕES
 # ------------------------------------------
 
-API_KEY = "ed6c277617a7e4bfb0ad840ecedce5fc"
+API_KEY = "ed6c277617a7e4bfb0ad840ecedce5fc"  # sua API
 BASE_URL = "https://v3.football.api-sports.io"
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -23,7 +23,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE)
 
 
 # ------------------------------------------
-# Função auxiliar: normalizar nomes
+# Limpeza de texto
 # ------------------------------------------
 def limpar_nome(texto):
     if not texto:
@@ -32,7 +32,7 @@ def limpar_nome(texto):
 
 
 # ------------------------------------------
-# Buscar todos os jogos do dia
+# Buscar jogos do dia
 # ------------------------------------------
 def buscar_jogos_do_dia():
     hoje = datetime.utcnow().strftime("%Y-%m-%d")
@@ -53,7 +53,7 @@ def buscar_jogos_do_dia():
 
 
 # ------------------------------------------
-# Inserir jogo no banco
+# Salvar jogo no Supabase
 # ------------------------------------------
 def salvar_jogo(jogo):
     fixture = jogo["fixture"]
@@ -71,31 +71,31 @@ def salvar_jogo(jogo):
         "status": fixture["status"]["short"],
     }
 
-    # Verificar se já existe no banco
+    # Verificar se já existe
     existente = (
         supabase.table("games")
-        .select("*")
+        .select("id")
         .eq("api_id", fixture["id"])
         .execute()
     )
 
     if len(existente.data) > 0:
-        print("⚠ Já existe:", fixture["id"])
+        print(f"⚠ Jogo já existe: {fixture['id']}")
         return existente.data[0]["id"]
 
-    # Inserir novo
+    # Inserir novo jogo
     novo = (
         supabase.table("games")
         .insert(jogo_data)
         .execute()
     )
 
-    print("✔ Inserido:", fixture["id"])
+    print(f"✔ Jogo inserido: {fixture['id']}")
     return novo.data[0]["id"]
 
 
 # ------------------------------------------
-# PROCESSO PRINCIPAL
+# Função principal: atualizar jogos
 # ------------------------------------------
 def atualizar_jogos():
     print("\n==============================")
@@ -119,7 +119,7 @@ def atualizar_jogos():
 
 
 # ------------------------------------------
-# Execução direta
+# Execução direta (terminal)
 # ------------------------------------------
 if __name__ == "__main__":
     atualizar_jogos()
