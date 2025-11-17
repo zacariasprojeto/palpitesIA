@@ -207,12 +207,62 @@ def dashboard():
     )
     # ======================================== #
 
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
+    # ============================================
+# SISTEMA DE ATUALIZAÇÃO (JOGOS, ODDS, PREVISÕES)
+# ============================================
 
+from games_engine import atualizar_jogos_do_dia
+from odds_engine import atualizar_odds_do_dia
+from predictions_engine import atualizar_previsoes
+
+# ---- 1) Atualizar JOGOS (games) ----
+@app.route("/atualizar/jogos")
+def rota_atualizar_jogos():
+    try:
+        total = atualizar_jogos_do_dia()
+        return jsonify({"status": "ok", "msg": f"{total} jogos atualizados."})
+    except Exception as e:
+        return jsonify({"status": "erro", "detalhe": str(e)}), 500
+
+
+# ---- 2) Atualizar ODDS (markets + odds) ----
+@app.route("/atualizar/odds")
+def rota_atualizar_odds():
+    try:
+        total = atualizar_odds_do_dia()
+        return jsonify({"status": "ok", "msg": f"{total} odds atualizadas."})
+    except Exception as e:
+        return jsonify({"status": "erro", "detalhe": str(e)}), 500
+
+
+# ---- 3) Atualizar PREDIÇÕES (predictions) ----
+@app.route("/atualizar/previsoes")
+def rota_atualizar_previsoes():
+    try:
+        total = atualizar_previsoes()
+        return jsonify({"status": "ok", "msg": f"{total} previsões geradas."})
+    except Exception as e:
+        return jsonify({"status": "erro", "detalhe": str(e)}), 500
+
+
+# ---- 4) API usada pelo front-end para mostrar palpites ----
+@app.route("/api/palpites")
+def api_palpites():
+    try:
+        dados = (
+            supabase.table("predictions")
+            .select("*")
+            .order("ev", desc=True)
+            .limit(50)
+            .execute()
+        )
+        return jsonify(dados.data)
+    except Exception as e:
+        return jsonify({"status": "erro", "detalhe": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 10000))
