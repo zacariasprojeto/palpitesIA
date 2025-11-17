@@ -3,8 +3,7 @@ from supabase import create_client, Client
 from datetime import datetime, timedelta
 import os
 import random
-import smtplib
-from email.mime.text import MIMEText
+import requests
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "chave_default")
@@ -22,13 +21,11 @@ if not SUPABASE_URL or not SUPABASE_SERVICE:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE)
 
 # ==============================
-# EMAIL CONFIG (BREVO)
+# RESEND EMAIL CONFIG
 # ==============================
 
-SMTP_SERVER = "smtp-relay.brevo.com"
-SMTP_PORT = 587
-SMTP_USER = os.getenv("EMAIL_SENDER")
-SMTP_PASS = os.getenv("EMAIL_PASSWORD")
+RESEND_KEY = os.getenv("RESEND_KEY")
+EMAIL_SENDER = os.getenv("EMAIL_SENDER")  # Ex: noreply@seudominio.com
 
 
 def gerar_codigo():
@@ -36,24 +33,41 @@ def gerar_codigo():
 
 
 def enviar_email(destino, codigo):
-    msg = MIMEText(f"Seu código de confirmação é: {codigo}")
-    msg["Subject"] = "Código de Confirmação - Lanzaca IA"
-    msg["From"] = SMTP_USER
-    msg["To"] = destino
+    url = "https://api.resend.com/emails"
+
+    payload = {
+        "from": f"Lanzaca IA <{EMAIL_SENDER}>",
+        "to": destino,
+        "subject": "Código de Confirmação - Lanzaca IA",
+        "html": f"""
+        <h2>Seu código de confirmação:</h2>
+        <p style='font-size:22px;font-weight:bold;color:#1a1a1a'>
+            {codigo}
+        </p>
+        """
+    }
+
+    headers = {
+        "Authorization": f"Bearer {RESEND_KEY}",
+        "Content-Type": "application/json"
+    }
 
     try:
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.starttls()
-            server.login(SMTP_USER, SMTP_PASS)
-            server.sendmail(SMTP_USER, destino, msg.as_string())
+        r = requests.post(url, json=payload, headers=headers)
 
-        print("Código enviado para:", destino)
+        if r.status_code in [200, 202]:
+            print(f"📧 Código enviado para: {destino}")
+        else:
+            print("❌ ERRO NO ENVIO:", r.text)
 
     except Exception as e:
-        print("ERRO AO ENVIAR EMAIL:", e)
+        print("❌ ERRO NO ENVIO:", e)
 
 
-# ROTAS -------------------------------------
+# ==============================
+# ROTAS FLASK
+# ==============================
+
 
 @app.route("/")
 def index():
@@ -65,7 +79,13 @@ def login():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
-    dados = supabase.table("users").select("*").eq("email", email).eq("senha", senha).execute()
+    dados = (
+        supabase.table("users")
+        .select("*")
+        .eq("email", email)
+        .eq("senha", senha)
+        .execute()
+    )
 
     if len(dados.data) == 0:
         return render_template("index.html", erro="Erro no login.")
@@ -87,12 +107,15 @@ def cadastro():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
+    # 1 — Verifica se já existe user
     existe = supabase.table("users").select("*").eq("email", email).execute()
     if len(existe.data) > 0:
         return render_template("cadastro.html", erro="Email já cadastrado.")
 
+    # Remove qualquer pendente antigo
     supabase.table("pending_users").delete().eq("email", email).execute()
 
+    # Insere no pending
     supabase.table("pending_users").insert({
         "nome": nome,
         "celular": celular,
@@ -100,15 +123,16 @@ def cadastro():
         "senha": senha
     }).execute()
 
+    # Gera e salva código
     codigo = gerar_codigo()
 
     supabase.table("confirm_codes").delete().eq("email", email).execute()
-
     supabase.table("confirm_codes").insert({
         "email": email,
         "codigo": str(codigo)
     }).execute()
 
+    # Envia e-mail
     enviar_email(email, codigo)
 
     return redirect(f"/confirmar?email={email}")
@@ -129,17 +153,30 @@ def api_confirmar():
     if not codigo or not email:
         return jsonify({"message": "Dados incompletos"}), 400
 
-    verifica = supabase.table("confirm_codes").select("*").eq("email", email).eq("codigo", codigo).execute()
+    verifica = (
+        supabase.table("confirm_codes")
+        .select("*")
+        .eq("email", email)
+        .eq("codigo", codigo)
+        .execute()
+    )
 
     if len(verifica.data) == 0:
         return jsonify({"message": "Código incorreto"}), 401
 
-    pendente = supabase.table("pending_users").select("*").eq("email", email).execute()
+    pendente = (
+        supabase.table("pending_users")
+        .select("*")
+        .eq("email", email)
+        .execute()
+    )
+
     if len(pendente.data) == 0:
         return jsonify({"message": "Cadastro pendente não encontrado"}), 404
 
     usuario = pendente.data[0]
 
+    # Move para tabela definitiva
     supabase.table("users").insert({
         "nome": usuario["nome"],
         "celular": usuario["celular"],
@@ -148,6 +185,7 @@ def api_confirmar():
         "is_admin": False
     }).execute()
 
+    # Remove pendente e código
     supabase.table("pending_users").delete().eq("email", email).execute()
     supabase.table("confirm_codes").delete().eq("email", email).execute()
 
@@ -167,7 +205,7 @@ def logout():
     return redirect("/")
 
 
-# RENDER PORT FIX
+# RENDER — PORTA OBRIGATÓRIA
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
