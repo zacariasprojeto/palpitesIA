@@ -1,146 +1,178 @@
-# =============================================================
+# ===============================================================
 # predictions_engine.py
-# IA gera probabilidades para cada jogo e salva no Supabase
-# =============================================================
+# IA para gerar probabilidades, análises e palpites completos
+# ===============================================================
 
 import os
-import requests
-from supabase import create_client
 from openai import OpenAI
+from datetime import datetime
+from supabase import create_client, Client
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+# -----------------------------------------------------------
+# CONFIGURAÇÕES
+# -----------------------------------------------------------
 
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")  # sua chave sk-proj….
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_KEY:
+    OPENAI_KEY = "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"
 
 client = OpenAI(api_key=OPENAI_KEY)
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE = os.getenv("SUPABASE_SERVICE_KEY")
 
-# =============================================================
-# PROMPT PRINCIPAL — Inteligência de Palpites
-# =============================================================
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE)
 
-PROMPT = """
-Você é o maior gerador de palpites de futebol do mundo, 
-com índice de acerto acima de 80%.
 
-Analise o jogo abaixo e gere probabilidades reais para:
+# -----------------------------------------------------------
+# ❗ PROMPT ULTRA-PODEROSO PARA IA
+# Gera análises + probabilidades + odds fair + palpites completos
+# -----------------------------------------------------------
 
-1. Resultado Final:
-   - Vitória da Casa
-   - Empate
-   - Vitória do Visitante
+def gerar_prompt(jogo):
+    prompt = f"""
+Você é o **maior especialista de futebol do mundo** e também um analista estatístico avançado.
 
-2. Total de Gols:
-   - Mais de 1.5
-   - Mais de 2.5
-   - Menos de 1.5
-   - Menos de 2.5
+GERAR PREVISÕES COMPLETAS para o jogo:
 
-3. Ambas Marcam:
-   - Sim
-   - Não
+🏆 **{jogo["liga_nome"]} - {jogo["liga_pais"]}**  
+⚽ **{jogo["time_casa"]} vs {jogo["time_fora"]}**  
+📅 Data: {jogo["date"]}
 
-4. Placar Provável (somente 1 placar)
+Use:
+- estatísticas históricas reais
+- forma recente
+- gols marcados / sofridos
+- média de escanteios
+- média de cartões
+- xG / xGA estimados
+- força das equipes
+- status atual da competição
+- motivação e elenco provável
 
-5. Probabilidades por Jogador:
-   - Jogador mais provável de marcar gol
-   - Jogador mais provável de receber cartão
-   (retornar apenas 1 jogador de cada lado)
+GERE O SEGUINTE EM FORMATO JSON:
 
-6. Estatísticas:
-   - Probabilidade de +8 escanteios
-   - Probabilidade de +10 escanteios
-   - Probabilidade de +3 cartões no jogo
+{{
+  "resultado_final": {{
+      "casa": probabilidade_em_percentual,
+      "empate": probabilidade_em_percentual,
+      "fora": probabilidade_em_percentual,
+      "palpite": "Casa / Empate / Fora"
+  }},
+  
+  "ambas_marcam": {{
+      "sim": percentual,
+      "nao": percentual,
+      "palpite": "Sim ou Não"
+  }},
 
-7. Mercado Especial:
-   - Jogador que chuta mais ao gol
-   - Jogador que cria mais chances
+  "gols": {{
+      "mais_0_5": percentual,
+      "mais_1_5": percentual,
+      "mais_2_5": percentual,
+      "mais_3_5": percentual,
+      "menos_2_5": percentual
+  }},
 
-RESPOSTA OBRIGATORIAMENTE NO FORMATO JSON:
-{
- "resultado_final": {"casa": 0.0, "empate": 0.0, "fora": 0.0},
- "gols": {
-     "mais_1_5": 0.0, "mais_2_5": 0.0,
-     "menos_1_5": 0.0, "menos_2_5": 0.0
- },
- "ambas_marcam": {"sim": 0.0, "nao": 0.0},
- "placar_provavel": "X-Y",
- "jogadores": {
-     "gol_marcador": "Nome",
-     "cartao": "Nome"
- },
- "escanteios": {
-     "mais_8": 0.0,
-     "mais_10": 0.0
- },
- "cartoes": {
-     "mais_3": 0.0
- },
- "especial": {
-     "finalizacoes": "Nome",
-     "criacao_chances": "Nome"
- }
-}
+  "escanteios": {{
+      "mais_8_5": percentual,
+      "mais_9_5": percentual,
+      "mais_10_5": percentual
+  }},
+
+  "cartoes": {{
+      "mais_3_5": percentual,
+      "mais_4_5": percentual
+  }},
+
+  "chance_dupla": {{
+      "1x": percentual,
+      "12": percentual,
+      "x2": percentual
+  }},
+
+  "placar_correto": {{
+      "placar": "ex: 2x1"
+  }},
+
+  "analise": "texto com análise completa do jogo"
+}}
+
+RETORNE SOMENTE JSON VÁLIDO.
 """
+    return prompt
 
-# =============================================================
-# FUNÇÃO — gerar probabilidades com IA
-# =============================================================
 
-def gerar_predicao(jogo):
-    texto_jogo = f"""
-    {jogo['home_name']} vs {jogo['away_name']}
-    Liga: {jogo['league']}
-    """
+# -----------------------------------------------------------
+# CHAMADA À IA
+# -----------------------------------------------------------
+
+def gerar_previsao_ia(jogo):
+    prompt = gerar_prompt(jogo)
 
     resposta = client.chat.completions.create(
-        model="gpt-4.1-mini",
+        model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": PROMPT},
-            {"role": "user", "content": texto_jogo},
-        ]
+            {"role": "system", "content": "Você é um analista de futebol especialista mundial."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3
     )
 
-    conteudo = resposta.choices[0].message.content
-    return eval(conteudo)  # transforma JSON em Python
+    texto = resposta.choices[0].message.content
+
+    # Tenta converter JSON
+    try:
+        import json
+        dados = json.loads(texto)
+        return dados
+
+    except Exception:
+        print("ERRO ao converter JSON da IA. Conteúdo retornado:")
+        print(texto)
+        return None
 
 
-# =============================================================
-# SALVAR NA TABELA predictions
-# =============================================================
+# -----------------------------------------------------------
+# SALVAR PREVISÃO NO BANCO
+# -----------------------------------------------------------
 
-def salvar_predicao(fixture_id, pred):
-    supabase.table("predictions").insert({
-        "game_id": fixture_id,
-        "dados": pred
+def salvar_previsao(game_id, previsao):
+    return supabase.table("predictions").insert({
+        "game_id": game_id,
+        "previsao": previsao,
+        "criado_em": datetime.utcnow().isoformat()
     }).execute()
 
-    print(f"✅ Predição salva para fixture {fixture_id}")
+
+# -----------------------------------------------------------
+# PROCESSO COMPLETO
+# -----------------------------------------------------------
+
+def processar_jogo(game_id):
+    print(f"\n🔍 Gerando previsões para o jogo ID {game_id}...")
+
+    jogo = (
+        supabase.table("games")
+        .select("*")
+        .eq("id", game_id)
+        .execute()
+    ).data[0]
+
+    previsao = gerar_previsao_ia(jogo)
+
+    if previsao:
+        salvar_previsao(game_id, previsao)
+        print("✅ Previsão salva com sucesso!")
+        return True
+
+    print("❌ Falha ao gerar previsão para o jogo.")
+    return False
 
 
-# =============================================================
-# MOTOR PRINCIPAL
-# =============================================================
+# -----------------------------------------------------------
+# EXECUÇÃO DIRETA
+# -----------------------------------------------------------
 
-def gerar_predicoes_para_todos_os_jogos():
-    jogos = supabase.table("games").select("*").execute().data
-
-    if not jogos:
-        print("⚠ Nenhum jogo encontrado.")
-        return
-
-    for jogo in jogos:
-        print(f"\n🔮 Gerando palpites para {jogo['home_name']} vs {jogo['away_name']}...")
-
-        try:
-            pred = gerar_predicao(jogo)
-            salvar_predicao(jogo["fixture_id"], pred)
-        except Exception as e:
-            print("❌ Erro:", e)
-
-
-# EXECUTAR DIRETO
 if __name__ == "__main__":
-    gerar_predicoes_para_todos_os_jogos()
+    print("Rodar manualmente: predictions_engine.processar_jogo(id)")
