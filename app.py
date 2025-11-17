@@ -14,10 +14,12 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "chave_default")
 # ==============================
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE = os.getenv("SUPABASE_SERVICE")  # ATENÇÃO: nome exato do Render
+SUPABASE_ANON = os.getenv("SUPABASE_ANON_KEY")   # chave correta !!
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE)
+if not SUPABASE_URL or not SUPABASE_ANON:
+    raise Exception("Variáveis SUPABASE_URL ou SUPABASE_ANON_KEY não configuradas!")
 
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON)
 
 # ==============================
 # EMAIL CONFIG (BREVO)
