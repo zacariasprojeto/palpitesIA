@@ -1,169 +1,171 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirmar Código - Lanzaca IA</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirmar Código • Palpites IA</title>
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #000;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        color: #ffffff;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 
-        .card {
-            width: 380px;
-            background: #0c0c0c;
-            padding: 40px;
-            border-radius: 18px;
-            text-align: center;
-            border: 2px solid #00ff88;
-            box-shadow: 0 0 35px #00ff88;
-        }
+    .container {
+        width: 360px;
+        padding: 35px 30px;
+        background: rgba(15, 15, 15, 0.95);
+        border-radius: 20px;
+        border: 2px solid #00ff88;
+        box-shadow: 0 0 25px #00ff88;
+        text-align: center;
+        animation: fadeIn 0.5s ease;
+    }
 
-        .logo {
-            font-size: 45px;
-            color: #00ff88;
-            margin-bottom: 5px;
-        }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
 
-        h1 {
-            margin: 0;
-            font-size: 28px;
-            color: #00ff88;
-        }
+    /* Bola neon giratória */
+    .bola-neon {
+        width: 130px;
+        height: 130px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        border: 6px solid rgba(0,255,136,0.2);
+        border-top-color: #00ff88;
+        animation: spin 1.6s linear infinite;
+        box-shadow: 0 0 20px #00ff88;
+    }
 
-        p.sub {
-            margin-top: 3px;
-            color: #b3b3b3;
-            font-size: 14px;
-        }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 
-        input {
-            width: 92%;
-            padding: 12px;
-            margin-top: 18px;
-            border-radius: 6px;
-            background: #1a1a1a;
-            border: 1px solid #222;
-            color: white;
-            font-size: 22px;
-            text-align: center;
-            letter-spacing: 3px;
-        }
+    h1 {
+        margin: 10px 0 15px 0;
+        font-size: 30px;
+        font-weight: bold;
+        color: #00ff88;
+        text-shadow: 0 0 15px #00ff88;
+        letter-spacing: 2px;
+    }
 
-        button {
-            width: 100%;
-            padding: 14px;
-            margin-top: 22px;
-            background-color: #00ff88;
-            color: #000;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
+    p {
+        margin-bottom: 20px;
+        color: #cccccc;
+        font-size: 15px;
+    }
 
-        button:hover {
-            background-color: #00cc6a;
-        }
+    .input-group {
+        text-align: left;
+        margin-bottom: 18px;
+    }
 
-        #mensagem {
-            margin-top: 20px;
-        }
-    </style>
+    .input-group label {
+        font-size: 14px;
+        color: #cccccc;
+    }
+
+    .input-group input {
+        width: 100%;
+        padding: 14px;
+        border-radius: 10px;
+        border: 2px solid #00ff88;
+        background: #0f0f0f;
+        color: #fff;
+        font-size: 16px;
+        outline: none;
+        text-align: center;
+        text-transform: uppercase;
+        font-weight: bold;
+        letter-spacing: 3px;
+        transition: 0.3s ease;
+    }
+
+    .input-group input:focus {
+        box-shadow: 0 0 15px #00ff88;
+    }
+
+    .botao {
+        width: 100%;
+        padding: 15px;
+        background: #00ff88;
+        color: #000;
+        border: none;
+        border-radius: 10px;
+        font-size: 17px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 10px;
+        box-shadow: 0 0 15px #00ff88;
+        transition: transform 0.2s ease;
+    }
+
+    .botao:hover {
+        transform: translateY(-3px);
+    }
+
+    .erro {
+        margin-top: 10px;
+        color: #ff5252;
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    .link {
+        margin-top: 18px;
+        display: block;
+        font-size: 15px;
+        color: #00ff88;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .link:hover {
+        text-decoration: underline;
+    }
+
+</style>
 
 </head>
-
 <body>
 
-    <div class="card">
+<div class="container">
 
-        <div class="logo">⚡</div>
-        <h1>Confirmar código</h1>
-        <p class="sub">Enviamos um código para o seu e-mail.</p>
+    <div class="bola-neon"></div>
 
-        <form id="formConfirmar">
+    <h1>PALPITES IA</h1>
 
-            <!-- Código -->
-            <input type="text" id="codigo" maxlength="6" placeholder="Digite o código">
+    <p>Enviamos um código de verificação para:<br><b>{{ email }}</b></p>
 
-            <!-- Email oculto -->
-            <input type="hidden" id="email" value="{{ email }}">
+    <form method="POST">
 
-            <button type="submit">Validar Código</button>
+        <div class="input-group">
+            <label>Código de Verificação</label>
+            <input type="text" name="codigo" maxlength="6" placeholder="••••••" required>
+        </div>
 
-        </form>
+        <button class="botao" type="submit">Confirmar</button>
 
-        <!-- Mensagens -->
-        <div id="mensagem"></div>
+        {% if erro %}
+            <div class="erro">{{ erro }}</div>
+        {% endif %}
 
-    </div>
+    </form>
 
+    <a class="link" href="/cadastro?reenviar=1&email={{ email }}">Reenviar código</a>
+    <a class="link" href="/login">Voltar ao login</a>
 
-    <!-- ===================================================== -->
-    <!--                     SCRIPT OFICIAL                    -->
-    <!-- ===================================================== -->
-    <script>
-        document.getElementById("formConfirmar").addEventListener("submit", async function (e) {
-            e.preventDefault();
-
-            const codigo = document.getElementById("codigo").value;
-            const email = document.getElementById("email").value;
-
-            const resposta = await fetch("/api/confirmar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ codigo, email })
-            });
-
-            const dados = await resposta.json();
-            const msgBox = document.getElementById("mensagem");
-
-            if (resposta.status === 200) {
-                msgBox.innerHTML = `
-                    <div style="
-                        background: #00ff88;
-                        color: #000;
-                        padding: 12px;
-                        font-weight: bold;
-                        border-radius: 8px;
-                        margin-bottom: 15px;
-                        text-align:center;">
-                        ✅ Cadastro realizado com sucesso!
-                    </div>
-                `;
-
-                // Redirecionar após 2s
-                setTimeout(() => {
-                    window.location.href = "/";
-                }, 2000);
-
-            } else {
-                msgBox.innerHTML = `
-                    <div style="
-                        background: #ff4444;
-                        color: white;
-                        padding: 12px;
-                        font-weight: bold;
-                        border-radius: 8px;
-                        margin-bottom: 15px;
-                        text-align:center;">
-                        ❌ ${dados.message}
-                    </div>
-                `;
-            }
-        });
-    </script>
+</div>
 
 </body>
-
 </html>
