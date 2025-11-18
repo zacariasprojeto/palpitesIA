@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palpites iA - Top Palpites</title>
+
+<style>
+
+/* ==========================================
+   PALETA PREMIUM PALPITES IA
+=========================================== */
+
+:root {
+    --preto: #0a0a0a;
+    --preto2: #121212;
+    --cinza: #b3b3b3;
+
+    --verde: #00ff88;
+    --verde2: #00cc6a;
+    --azul: #00e5ff;
+}
+
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Inter", sans-serif;
+}
+
+body {
+    background: var(--preto);
+    color: white;
+    padding-bottom: 60px;
+}
+
+/* HEADER */
+.header {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.back-btn {
+    font-size: 28px;
+    cursor: pointer;
+}
+
+.header h2 {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+/* BLOCO DO PALPITE */
+.card-top {
+    background: #141414;
+    margin: 20px;
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid #222;
+    transition: .3s;
+    position: relative;
+}
+
+.card-top:hover {
+    transform: scale(1.01);
+    border-color: var(--verde);
+}
+
+/* TAG */
+.tag-top {
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    background: var(--verde);
+    color: black;
+    padding: 5px 12px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+/* TÍTULO */
+.titulo-top {
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.liga {
+    font-size: 13px;
+    color: var(--cinza);
+    margin-top: 3px;
+}
+
+/* BLOCO EVENTO */
+.evento-box {
+    background: #0f0f0f;
+    padding: 15px;
+    border-radius: 14px;
+    border: 1px solid #1b1b1b;
+    margin-top: 16px;
+}
+
+.equipes {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.horario {
+    font-size: 12px;
+    color: var(--cinza);
+    margin-top: 3px;
+}
+
+/* MERCADO */
+.mercado {
+    margin-top: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--verde2);
+}
+
+/* ODD */
+.odd {
+    margin-top: 10px;
+    font-size: 30px;
+    font-weight: 900;
+    color: var(--verde);
+}
+
+/* DADOS PROFISSIONAIS */
+.dados-box {
+    margin-top: 15px;
+    padding: 12px;
+    background: #101010;
+    border-radius: 14px;
+    border: 1px solid #222;
+}
+
+.dado-linha {
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: var(--cinza);
+}
+
+.dado-valor {
+    float: right;
+    color: white;
+}
+
+/* JUSTIFICATIVA DA IA */
+.justificativa {
+    margin-top: 16px;
+    padding: 12px;
+    background: #0e0e0e;
+    border-left: 3px solid var(--verde);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--cinza);
+}
+
+/* BOTÃO */
+.btn-apostar {
+    margin-top: 18px;
+    padding: 14px;
+    background: var(--verde);
+    color: black;
+    font-weight: 700;
+    text-align: center;
+    border-radius: 16px;
+    cursor: pointer;
+}
+
+.btn-apostar:hover {
+    background: var(--verde2);
+}
+
+/* RESPONSIVO */
+@media(max-width: 600px) {
+    .card-top {
+        margin: 14px;
+    }
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <div class="back-btn" onclick="history.back()">←</div>
+    <h2>Palpites de Alto Acerto</h2>
+</div>
+
+<!-- ========================= -->
+<!-- 🔥 TOP 1 -->
+<!-- ========================= -->
+
+<div class="card-top">
+    <div class="tag-top">TOP 1</div>
+
+    <div class="titulo-top">Alta chance de gols + Tendência ofensiva</div>
+    <div class="liga">Premier League • Inglaterra</div>
+
+    <div class="evento-box">
+        <div class="equipes">Manchester City x Brighton</div>
+        <div class="horario">Hoje • 17:00</div>
+    </div>
+
+    <div class="mercado">Mais de 2.5 gols</div>
+    <div class="odd">1.85</div>
+
+    <div class="dados-box">
+        <div class="dado-linha">Média de gols marcados: <span class="dado-valor">2.8</span></div>
+        <div class="dado-linha">Média de gols sofridos: <span class="dado-valor">1.1</span></div>
+        <div class="dado-linha">Escanteios por jogo: <span class="dado-valor">10.4</span></div>
+        <div class="dado-linha">Finalizações por jogo: <span class="dado-valor">18</span></div>
+        <div class="dado-linha">Últimos 5 jogos: <span class="dado-valor">✓ ✓ ✕ ✓ ✓</span></div>
+    </div>
+
+    <div class="justificativa">
+        A IA identificou forte padrão ofensivo, com média alta de gols e volume elevado de finalizações nos últimos jogos.
+    </div>
+
+    <div class="btn-apostar">Quero essa aposta</div>
+</div>
+
+<!-- ========================= -->
+<!-- 🔥 TOP 2 -->
+<!-- ========================= -->
+<div class="card-top">
+    <div class="tag-top">TOP 2</div>
+
+    <div class="titulo-top">Ambas Marcam + Ataques fortes</div>
+    <div class="liga">Serie A • Itália</div>
+
+    <div class="evento-box">
+        <div class="equipes">Inter de Milão x Roma</div>
+        <div class="horario">Hoje • 16:30</div>
+    </div>
+
+    <div class="mercado">Ambas Marcam — Sim</div>
+    <div class="odd">1.90</div>
+
+    <div class="dados-box">
+        <div class="dado-linha">Finalizações Inter: <span class="dado-valor">16</span></div>
+        <div class="dado-linha">Finalizações Roma: <span class="dado-valor">14</span></div>
+        <div class="dado-linha">Gols por jogo: <span class="dado-valor">3.4</span></div>
+        <div class="dado-linha">Gols sofridos (média): <span class="dado-valor">1.2</span></div>
+        <div class="dado-linha">Histórico recente: <span class="dado-valor">✓ ✕ ✓ ✓ ✓</span></div>
+    </div>
+
+    <div class="justificativa">
+        Ambos os times têm alta taxa de finalizações e defesas instáveis, aumentando a probabilidade de gols para ambos os lados.
+    </div>
+
+    <div class="btn-apostar">Quero essa aposta</div>
+</div>
+
+<!-- ========================= -->
+<!-- 🔥 TOP 3 -->
+<!-- ========================= -->
+
+<div class="card-top">
+    <div class="tag-top">TOP 3</div>
+
+    <div class="titulo-top">Escanteios acima da média</div>
+    <div class="liga">Bundesliga • Alemanha</div>
+
+    <div class="evento-box">
+        <div class="equipes">Bayern de Munique x RB Leipzig</div>
+        <div class="horario">Hoje • 15:30</div>
+    </div>
+
+    <div class="mercado">Mais de 9.5 escanteios</div>
+    <div class="odd">1.55</div>
+
+    <div class="dados-box">
+        <div class="dado-linha">Escanteios Bayern: <span class="dado-valor">7.2</span></div>
+        <div class="dado-linha">Escanteios Leipzig: <span class="dado-valor">5.1</span></div>
+        <div class="dado-linha">Chutes no gol: <span class="dado-valor">14</span></div>
+        <div class="dado-linha">Estilo ofensivo: <span class="dado-valor">Alta pressão</span></div>
+    </div>
+
+    <div class="justificativa">
+        O confronto apresenta média muito elevada de escanteios devido ao estilo ofensivo de ambas as equipes.
+    </div>
+
+    <div class="btn-apostar">Quero essa aposta</div>
+</div>
+
+<!-- ========================= -->
+<!-- 🔥 TOP 4 -->
+<!-- ========================= -->
+
+<div class="card-top">
+    <div class="tag-top">TOP 4</div>
+
+    <div class="titulo-top">Primeiro tempo movimentado</div>
+    <div class="liga">Ligue 1 • França</div>
+
+    <div class="evento-box">
+        <div class="equipes">PSG x Lille</div>
+        <div class="horario">Hoje • 17:00</div>
+    </div>
+
+    <div class="mercado">Mais de 0.5 gols no primeiro tempo</div>
+    <div class="odd">1.40</div>
+
+    <div class="dados-box">
+        <div class="dado-linha">PSG HT (últimos 10): <span class="dado-valor">80% gols</span></div>
+        <div class="dado-linha">Lille HT (últimos 10): <span class="dado-valor">70% gols</span></div>
+        <div class="dado-linha">Ritmo inicial: <span class="dado-valor">Alta intensidade</span></div>
+    </div>
+
+    <div class="justificativa">
+        Ambos os times têm padrões muito fortes de marcar cedo, com estatísticas que indicam jogo movimentado no início.
+    </div>
+
+    <div class="btn-apostar">Quero essa aposta</div>
+</div>
+
+<!-- ========================= -->
+<!-- 🔥 TOP 5 -->
+<!-- ========================= -->
+
+<div class="card-top">
+    <div class="tag-top">TOP 5</div>
+
+    <div class="titulo-top">Dupla Chance com valor</div>
+    <div class="liga">Liga Portugal</div>
+
+    <div class="evento-box">
+        <div class="equipes">Porto x Braga</div>
+        <div class="horario">Hoje • 21:00</div>
+    </div>
+
+    <div class="mercado">Dupla Chance — Porto ou Empate</div>
+    <div class="odd">1.32</div>
+
+    <div class="dados-box">
+        <div class="dado-linha">Porto em casa: <span class="dado-valor">85% sem perder</span></div>
+        <div class="dado-linha">Braga fora: <span class="dado-valor">40% vitórias</span></div>
+        <div class="dado-linha">Força defensiva: <span class="dado-valor">Alta</span></div>
+        <div class="dado-linha">Últimos confrontos: <span class="dado-valor">✓ ✓ ✓ ✕ ✓</span></div>
+    </div>
+
+    <div class="justificativa">
+        A consistência defensiva do Porto em casa torna o mercado de Dupla Chance altamente favorável e seguro.
+    </div>
+
+    <div class="btn-apostar">Quero essa aposta</div>
+</div>
+
+</body>
+</html>
