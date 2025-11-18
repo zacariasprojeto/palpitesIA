@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acesso Bloqueado • Palpites IA</title>
+
+<style>
+
+    body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        color: white;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        overflow-x: hidden;
+    }
+
+    /* ---------------- BOLA NEON ---------------- */
+
+    .bola-neon {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 6px solid rgba(0,255,136,0.2);
+        border-top-color: #00ff88;
+        margin: 40px auto 20px;
+        animation: spin 1.4s linear infinite;
+        box-shadow: 0 0 25px #00ff88;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---------------- CONTAINER ---------------- */
+
+    .container {
+        text-align: center;
+        padding: 20px;
+    }
+
+    .titulo {
+        font-size: 28px;
+        margin-bottom: 10px;
+        background: linear-gradient(#00ff88, #00d471);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 15px #00ff88;
+    }
+
+    .sub {
+        color: #bbb;
+        margin-bottom: 25px;
+        font-size: 17px;
+    }
+
+    .cadeado {
+        font-size: 65px;
+        color: #00ff88;
+        text-shadow: 0 0 20px #00ff88;
+        margin-bottom: 20px;
+    }
+
+    /* ---------------- BOTAO ---------------- */
+
+    .btn-plano {
+        background: #00ff88;
+        color: black;
+        padding: 15px 30px;
+        font-size: 20px;
+        font-weight: bold;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        box-shadow: 0 0 20px #00ff88;
+        transition: .3s;
+        margin-top: 10px;
+    }
+
+    .btn-plano:hover {
+        transform: translateY(-3px);
+    }
+
+    /* ---------------- VOLTAR ---------------- */
+
+    .voltar {
+        margin-top: 25px;
+        font-size: 14px;
+        color: #999;
+        cursor: pointer;
+    }
+
+    .voltar:hover {
+        color: #00ff88;
+    }
+
+</style>
+</head>
+<body>
+
+<div class="bola-neon"></div>
+
+<div class="container">
+
+    <div class="cadeado">🔒</div>
+
+    <h1 class="titulo">Acesso Restrito</h1>
+    <p class="sub">
+        Você está no período <b>TRIAL</b>.<br>
+        Para acessar o <b>TOP 3 do dia</b> e o sistema completo,<br>
+        é necessário assinar um plano premium.
+    </p>
+
+    <button class="btn-plano" onclick="window.location.href='/planos'">
+        ESCOLHER PLANO
+    </button>
+
+    <div class="voltar" onclick="window.location.href='/painel'">
+        ⬅ Voltar para o painel
+    </div>
+
+</div>
+
+</body>
+</html>
