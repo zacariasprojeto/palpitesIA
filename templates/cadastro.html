@@ -1,145 +1,169 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Criar conta - Lanzaca IA</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro • Palpites IA</title>
 
 <style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #000;
-    color: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
+    body {
+        margin: 0;
+        padding: 0;
+        background: #000000;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        color: #ffffff;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
 
-.card {
-    background: #0c0c0c;
-    padding: 40px;
-    width: 380px;
-    border-radius: 15px;
-    border: 2px solid #00ff88;
-    box-shadow: 0 0 25px #00ff88;
-    text-align: center;
-}
+    .container {
+        width: 360px;
+        padding: 35px 30px;
+        background: rgba(15, 15, 15, 0.9);
+        border-radius: 20px;
+        border: 2px solid #00ff88;
+        box-shadow: 0 0 25px #00ff88;
+        text-align: center;
+        animation: fadeIn 0.5s ease-in-out;
+    }
 
-.logo {
-    font-size: 40px;
-    color: #00ff88;
-    margin-bottom: 10px;
-}
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
 
-h2 {
-    margin: 0;
-    font-size: 26px;
-    color: #00ff88;
-}
+    /* 🔥 CÍRCULO NEON */
+    .bola-neon {
+        width: 130px;
+        height: 130px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        border: 6px solid rgba(0,255,136,0.2);
+        border-top-color: #00ff88;
+        animation: spin 1.6s linear infinite;
+        box-shadow: 0 0 20px #00ff88;
+    }
 
-p.sub {
-    margin-top: -5px;
-    font-size: 13px;
-    color: #b3b3b3;
-}
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-input {
-    width: 92%;
-    padding: 10px;
-    margin-top: 12px;
-    border-radius: 6px;
-    border: 1px solid #1f1f1f;
-    background: #1a1a1a;
-    color: white;
-    font-size: 15px;
-}
+    h1 {
+        margin: 10px 0 25px 0;
+        font-size: 32px;
+        font-weight: bold;
+        color: #00ff88;
+        text-shadow: 0 0 15px #00ff88;
+        letter-spacing: 2px;
+    }
 
-input:focus {
-    outline: none;
-    border-color: #00ff88;
-    box-shadow: 0 0 8px #00ff88;
-}
+    .input-group {
+        text-align: left;
+        margin-bottom: 18px;
+    }
 
-button {
-    width: 100%;
-    padding: 14px;
-    background: #00ff88;
-    color: black;
-    border: none;
-    margin-top: 18px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 16px;
-}
+    .input-group label {
+        font-size: 14px;
+        color: #cccccc;
+    }
 
-button:hover {
-    background: #00cc6a;
-}
+    .input-group input {
+        width: 100%;
+        padding: 14px;
+        border-radius: 10px;
+        border: 2px solid #00ff88;
+        background: #0f0f0f;
+        color: #ffffff;
+        font-size: 15px;
+        outline: none;
+        transition: all 0.3s ease;
+    }
 
-a {
-    color: #00ff88;
-    text-decoration: none;
-}
+    .input-group input:focus {
+        box-shadow: 0 0 15px #00ff88;
+    }
 
-.error {
-    margin-top: 10px;
-    color: #ff5050;
-    font-size: 14px;
-}
+    .botao {
+        width: 100%;
+        padding: 15px;
+        background: #00ff88;
+        color: #000;
+        border: none;
+        border-radius: 10px;
+        font-size: 17px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 10px;
+        box-shadow: 0 0 15px #00ff88;
+        transition: transform 0.2s ease;
+    }
+
+    .botao:hover {
+        transform: translateY(-3px);
+    }
+
+    .erro {
+        margin-top: 10px;
+        color: #ff5252;
+        font-weight: bold;
+    }
+
+    .link {
+        margin-top: 18px;
+        display: block;
+        font-size: 15px;
+        color: #00ff88;
+        text-decoration: none;
+    }
+
+    .link:hover {
+        text-decoration: underline;
+    }
+
 </style>
 </head>
-
 <body>
 
-<div class="card">
+<div class="container">
 
-    <div class="logo">⚡</div>
+    <div class="bola-neon"></div>
 
-    <h2>Criar conta</h2>
-    <p class="sub">Acesso Premium por 30 dias grátis</p>
+    <h1>PALPITES IA</h1>
 
-    <form method="POST" autocomplete="off">
+    <form method="POST">
 
-        <input type="text" name="nome" placeholder="Nome completo" required>
+        <div class="input-group">
+            <label>Nome Completo</label>
+            <input type="text" name="nome" placeholder="Seu nome" required>
+        </div>
 
-        <input type="text" id="celular" name="celular" placeholder="(DDD) Número" maxlength="15"
-               oninput="mascaraCelular(this)" required>
+        <div class="input-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="Seu email" required>
+        </div>
 
-        <input type="email" name="email" placeholder="Email" autocomplete="off" required>
+        <div class="input-group">
+            <label>Telefone</label>
+            <input type="tel" name="telefone" placeholder="(DDD) 00000-0000" required>
+        </div>
 
-        <input type="password" name="senha" placeholder="Senha" autocomplete="new-password" required>
+        <div class="input-group">
+            <label>Senha</label>
+            <input type="password" name="senha" placeholder="Crie sua senha" required>
+        </div>
 
-        <button type="submit">➜ Cadastrar</button>
+        <button class="botao" type="submit">Criar Conta</button>
+
+        {% if erro %}
+            <div class="erro">{{ erro }}</div>
+        {% endif %}
+
+        <a class="link" href="/login">Já tenho conta</a>
 
     </form>
 
-    <p style="margin-top: 12px;">
-        Já tem conta? <a href="/">Entrar</a>
-    </p>
-
-    {% if erro %}
-    <div class="error">{{ erro }}</div>
-    {% endif %}
-
 </div>
-
-<script>
-function mascaraCelular(campo) {
-    let v = campo.value.replace(/\D/g, "");
-
-    if (v.length >= 2) {
-        v = "(" + v.substring(0, 2) + ") " + v.substring(2);
-    }
-    if (v.length >= 10) {
-        v = v.substring(0, 10) + "-" + v.substring(10, 14);
-    }
-
-    campo.value = v;
-}
-</script>
 
 </body>
 </html>
