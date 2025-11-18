@@ -1,1 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planos • Palpites IA</title>
 
+<style>
+
+    body {
+        background: #000;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        color: white;
+    }
+
+    /* ---------------- HEADER ---------------- */
+
+    header {
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 2px solid #00ff88;
+        box-shadow: 0 0 15px #00ff88;
+        align-items: center;
+        background: rgba(20,20,20,0.9);
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .bola-neon-mini {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 4px solid rgba(0,255,136,0.25);
+        border-top-color: #00ff88;
+        animation: spin 1.5s linear infinite;
+        box-shadow: 0 0 15px #00ff88;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .logo h1 {
+        font-size: 26px;
+        font-weight: bold;
+        background: linear-gradient(#00ff88, #00d471);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 12px #00ff88;
+        letter-spacing: 2px;
+        margin: 0;
+    }
+
+    .btn-voltar {
+        background: transparent;
+        padding: 10px 20px;
+        border: 2px solid #00ff88;
+        border-radius: 10px;
+        cursor: pointer;
+        color: #00ff88;
+        font-weight: bold;
+        transition: .3s ease;
+    }
+
+    .btn-voltar:hover {
+        background: #00ff88;
+        color: black;
+    }
+
+    /* ---------------- TÍTULO ---------------- */
+
+    .titulo {
+        text-align: center;
+        font-size: 32px;
+        margin-top: 40px;
+        text-shadow: 0 0 18px #00ff88;
+    }
+
+    .subinfo {
+        text-align: center;
+        color: #bbb;
+        margin-bottom: 30px;
+    }
+
+    /* ---------------- PLANO BOX ---------------- */
+
+    .planos-container {
+        width: 92%;
+        margin: 0 auto 50px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 25px;
+    }
+
+    .plano-card {
+        background: rgba(22,22,22,0.9);
+        border: 2px solid rgba(255,255,255,0.12);
+        border-radius: 15px;
+        padding: 25px;
+        transition: 0.3s;
+        box-shadow: 0 0 20px rgba(0,255,136,0.1);
+    }
+
+    .plano-card:hover {
+        border-color: #00ff88;
+        transform: translateY(-5px);
+        box-shadow: 0 0 25px #00ff88;
+    }
+
+    .plano-titulo {
+        font-size: 24px;
+        text-align: center;
+        margin-bottom: 10px;
+        text-shadow: 0 0 8px #00ff88;
+    }
+
+    .preco {
+        font-size: 30px;
+        text-align: center;
+        margin: 10px 0 15px;
+        color: #00ff88;
+    }
+
+    .beneficios {
+        color: #ccc;
+        font-size: 15px;
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .btn-assinar {
+        width: 100%;
+        padding: 15px;
+        background: #00ff88;
+        color: black;
+        font-size: 18px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+        border: none;
+        box-shadow: 0 0 20px #00ff88;
+        transition: .3s;
+    }
+
+    .btn-assinar:hover {
+        transform: translateY(-3px);
+    }
+
+    /* ---------------- MODAL QR CODE ---------------- */
+
+    .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        display: none;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-content {
+        background: #111;
+        border: 2px solid #00ff88;
+        border-radius: 15px;
+        padding: 30px;
+        width: 90%;
+        max-width: 420px;
+        text-align: center;
+        box-shadow: 0 0 25px #00ff88;
+    }
+
+    .modal h2 {
+        margin-bottom: 15px;
+        text-shadow: 0 0 10px #00ff88;
+    }
+
+    #qrcode {
+        background: white;
+        padding: 15px;
+        border-radius: 15px;
+        margin: 20px auto;
+    }
+
+    .btn-fechar {
+        margin-top: 15px;
+        background: transparent;
+        border: 2px solid #00ff88;
+        padding: 10px 20px;
+        border-radius: 9px;
+        color: #00ff88;
+        font-weight: bold;
+        cursor: pointer;
+        transition: .3s;
+    }
+
+    .btn-fechar:hover {
+        background: #00ff88;
+        color: black;
+    }
+
+</style>
+
+</head>
+<body>
+
+<!-- =============== HEADER =============== -->
+
+<header>
+    <div class="logo">
+        <div class="bola-neon-mini"></div>
+        <h1>PALPITES IA</h1>
+    </div>
+
+    <button class="btn-voltar" onclick="window.location.href='/painel'">
+        ⬅ Voltar
+    </button>
+</header>
+
+<!-- =============== TÍTULO =============== -->
+
+<h2 class="titulo">Escolha um Plano Premium</h2>
+<p class="subinfo">Liberte os 3 palpites mais fortes do dia e tenha acesso total ao sistema.</p>
+
+<!-- =============== PLANOS =============== -->
+
+<div class="planos-container">
+
+    <!-- PLANO MENSAL -->
+    <div class="plano-card">
+        <div class="plano-titulo">Plano Mensal</div>
+        <div class="preco">R$ 29,90</div>
+        <div class="beneficios">
+            ✓ Top 3 do dia <br>
+            ✓ Apostas individuais <br>
+            ✓ Apostas múltiplas <br>
+            ✓ IA completa
+        </div>
+
+        <button class="btn-assinar" onclick="abrirPIX('mensal')">Assinar via PIX</button>
+    </div>
+
+    <!-- PLANO TRIMESTRAL -->
+    <div class="plano-card">
+        <div class="plano-titulo">Plano Trimestral</div>
+        <div class="preco">R$ 69,90</div>
+        <div class="beneficios">
+            ✓ Top 3 do dia <br>
+            ✓ IA completa <br>
+            ✓ Economia de 20%
+        </div>
+
+        <button class="btn-assinar" onclick="abrirPIX('trimestral')">Assinar via PIX</button>
+    </div>
+
+    <!-- PLANO ANUAL -->
+    <div class="plano-card">
+        <div class="plano-titulo">Plano Anual</div>
+        <div class="preco">R$ 199,90</div>
+        <div class="beneficios">
+            ✓ Acesso total <br>
+            ✓ Suporte prioritário <br>
+            ✓ Economia de 45%
+        </div>
+
+        <button class="btn-assinar" onclick="abrirPIX('anual')">Assinar via PIX</button>
+    </div>
+
+</div>
+
+
+<!-- =============== MODAL PIX =============== -->
+
+<div class="modal" id="modalPIX">
+    <div class="modal-content">
+        <h2>Pagamento via PIX</h2>
+        <p style="color:#bbb">Escaneie o QR Code abaixo para finalizar o pagamento.</p>
+
+        <div id="qrcode">Gerando QR Code...</div>
+
+        <button class="btn-fechar" onclick="fecharPIX()">Fechar</button>
+    </div>
+</div>
+
+
+<script>
+
+function abrirPIX(plano) {
+    document.getElementById("modalPIX").style.display = "flex";
+
+    // 🚀 Aqui depois você troca pelo PIX real do Mercado Pago
+    document.getElementById("qrcode").innerHTML = `
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=Plano:${plano}"
+             width="250" />
+    `;
+}
+
+function fecharPIX() {
+    document.getElementById("modalPIX").style.display = "none";
+}
+
+</script>
+
+</body>
+</html>
