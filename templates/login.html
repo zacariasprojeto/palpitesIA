@@ -9,25 +9,24 @@
     body {
         margin: 0;
         padding: 0;
-        background: #000000;
+        background: #000;
         font-family: 'Segoe UI', Tahoma, sans-serif;
         color: #ffffff;
         height: 100vh;
         display: flex;
         justify-content: center;
         align-items: center;
-        overflow: hidden;
     }
 
     .container {
         width: 360px;
         padding: 35px 30px;
-        background: rgba(15, 15, 15, 0.9);
+        background: rgba(15, 15, 15, 0.95);
         border-radius: 20px;
         border: 2px solid #00ff88;
         box-shadow: 0 0 25px #00ff88;
         text-align: center;
-        animation: fadeIn 0.5s ease-in-out;
+        animation: fadeIn 0.5s ease;
     }
 
     @keyframes fadeIn {
@@ -35,7 +34,7 @@
         to { opacity: 1; transform: scale(1); }
     }
 
-    /* 🔥 CÍRCULO NEON */
+    /* Bola neon */
     .bola-neon {
         width: 130px;
         height: 130px;
@@ -47,10 +46,12 @@
         box-shadow: 0 0 20px #00ff88;
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 
     h1 {
-        margin: 10px 0 25px 0;
+        margin: 10px 0 20px 0;
         font-size: 32px;
         font-weight: bold;
         color: #00ff88;
@@ -107,6 +108,7 @@
         margin-top: 10px;
         color: #ff5252;
         font-weight: bold;
+        font-size: 14px;
     }
 
     .link {
@@ -115,6 +117,7 @@
         font-size: 15px;
         color: #00ff88;
         text-decoration: none;
+        cursor: pointer;
     }
 
     .link:hover {
@@ -123,6 +126,7 @@
 
 </style>
 </head>
+
 <body>
 
 <div class="container">
@@ -135,12 +139,12 @@
 
         <div class="input-group">
             <label>Email</label>
-            <input type="email" name="email" placeholder="Digite seu email" required>
+            <input type="email" name="email" placeholder="Seu email" required>
         </div>
 
         <div class="input-group">
             <label>Senha</label>
-            <input type="password" name="senha" placeholder="Digite sua senha" required>
+            <input type="password" name="senha" placeholder="Sua senha" required>
         </div>
 
         <button class="botao" type="submit">Entrar</button>
@@ -149,7 +153,7 @@
             <div class="erro">{{ erro }}</div>
         {% endif %}
 
-        <a class="link" href="/cadastro">Criar conta gratuita</a>
+        <a class="link" href="/cadastro">Criar uma conta</a>
 
     </form>
 
