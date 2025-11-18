@@ -1,161 +1,110 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login • Palpites IA</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lanzaca IA - Login</title>
 
-<style>
-    body {
-        margin: 0;
-        padding: 0;
-        background: #000;
-        font-family: 'Segoe UI', Tahoma, sans-serif;
-        color: #ffffff;
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #00ff88;
+        }
 
-    .container {
-        width: 360px;
-        padding: 35px 30px;
-        background: rgba(15, 15, 15, 0.95);
-        border-radius: 20px;
-        border: 2px solid #00ff88;
-        box-shadow: 0 0 25px #00ff88;
-        text-align: center;
-        animation: fadeIn 0.5s ease;
-    }
+        .box {
+            width: 380px;
+            background: #0a0a0a;
+            padding: 35px;
+            border-radius: 15px;
+            box-shadow: 0 0 25px #00ff88;
+            text-align: center;
+        }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.9); }
-        to { opacity: 1; transform: scale(1); }
-    }
+        .icon {
+            font-size: 45px;
+            color: #00ff88;
+            margin-bottom: 5px;
+        }
 
-    /* Bola neon */
-    .bola-neon {
-        width: 130px;
-        height: 130px;
-        margin: 0 auto 20px;
-        border-radius: 50%;
-        border: 6px solid rgba(0,255,136,0.2);
-        border-top-color: #00ff88;
-        animation: spin 1.6s linear infinite;
-        box-shadow: 0 0 20px #00ff88;
-    }
+        .title {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
 
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
+        input {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: none;
+            background: #101010;
+            color: #00ff88;
+            font-size: 16px;
+            outline: none;
+            box-shadow: inset 0 0 12px #00ff88;
+        }
 
-    h1 {
-        margin: 10px 0 20px 0;
-        font-size: 32px;
-        font-weight: bold;
-        color: #00ff88;
-        text-shadow: 0 0 15px #00ff88;
-        letter-spacing: 2px;
-    }
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            background: #00ff88;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 12px #00ff88;
+        }
 
-    .input-group {
-        text-align: left;
-        margin-bottom: 18px;
-    }
+        button:hover {
+            background: #00cc66;
+        }
 
-    .input-group label {
-        font-size: 14px;
-        color: #cccccc;
-    }
+        .link {
+            margin-top: 15px;
+            font-size: 15px;
+        }
 
-    .input-group input {
-        width: 100%;
-        padding: 14px;
-        border-radius: 10px;
-        border: 2px solid #00ff88;
-        background: #0f0f0f;
-        color: #ffffff;
-        font-size: 15px;
-        outline: none;
-        transition: all 0.3s ease;
-    }
+        .link a {
+            color: #00ff88;
+            text-decoration: underline;
+        }
 
-    .input-group input:focus {
-        box-shadow: 0 0 15px #00ff88;
-    }
-
-    .botao {
-        width: 100%;
-        padding: 15px;
-        background: #00ff88;
-        color: #000;
-        border: none;
-        border-radius: 10px;
-        font-size: 17px;
-        font-weight: bold;
-        cursor: pointer;
-        margin-top: 10px;
-        box-shadow: 0 0 15px #00ff88;
-        transition: transform 0.2s ease;
-    }
-
-    .botao:hover {
-        transform: translateY(-3px);
-    }
-
-    .erro {
-        margin-top: 10px;
-        color: #ff5252;
-        font-weight: bold;
-        font-size: 14px;
-    }
-
-    .link {
-        margin-top: 18px;
-        display: block;
-        font-size: 15px;
-        color: #00ff88;
-        text-decoration: none;
-        cursor: pointer;
-    }
-
-    .link:hover {
-        text-decoration: underline;
-    }
-
-</style>
+        .erro {
+            color: #ff4d4d;
+            font-size: 15px;
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="container">
+<div class="box">
 
-    <div class="bola-neon"></div>
+    <div class="icon">⚡</div>
+    <div class="title">Lanzaca IA</div>
 
-    <h1>PALPITES IA</h1>
+    {% if erro %}
+        <div class="erro">{{ erro }}</div>
+    {% endif %}
 
-    <form method="POST">
-
-        <div class="input-group">
-            <label>Email</label>
-            <input type="email" name="email" placeholder="Seu email" required>
-        </div>
-
-        <div class="input-group">
-            <label>Senha</label>
-            <input type="password" name="senha" placeholder="Sua senha" required>
-        </div>
-
-        <button class="botao" type="submit">Entrar</button>
-
-        {% if erro %}
-            <div class="erro">{{ erro }}</div>
-        {% endif %}
-
-        <a class="link" href="/cadastro">Criar uma conta</a>
-
+    <form action="/login" method="POST">
+        <input type="email" name="email" placeholder="E-mail" required>
+        <input type="password" name="senha" placeholder="Senha" required>
+        <button type="submit">➜ Entrar no Sistema</button>
     </form>
+
+    <div class="link">
+        Não tem conta? <a href="/cadastro">Cadastrar</a>
+    </div>
 
 </div>
 
