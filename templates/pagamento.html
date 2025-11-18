@@ -2,87 +2,140 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Renovar Licença - Lanzaca IA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento • Lanzaca IA</title>
+
     <style>
         body {
+            margin: 0;
             background: #000;
             color: white;
-            font-family: Arial;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
             text-align: center;
-            padding-top: 40px;
+            animation: fadeIn 1s ease;
         }
 
-        .card {
-            background: #0c0c0c;
-            width: 420px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .circle {
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
             margin: auto;
-            padding: 30px;
-            border-radius: 15px;
-            border: 2px solid #00ff88;
-            box-shadow: 0 0 25px #00ff88;
-        }
-
-        h1 {
-            color: #00ff88;
-        }
-
-        .plan {
-            margin-top: 30px;
             padding: 15px;
-            background: #111;
-            border-radius: 10px;
-            border: 1px solid #00ff88;
-            cursor: pointer;
+            position: relative;
+            background: radial-gradient(circle, #0f0 0%, #003300 80%);
+            box-shadow: 0 0 35px #00ff88;
         }
 
-        img {
-            margin-top: 10px;
-            width: 220px;
-            border: 2px solid #00ff88;
+        .ring {
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            width: 290px;
+            height: 290px;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            border-top: 4px solid #00ff88;
+            border-left: 4px solid #00ff88;
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .qr {
+            width: 230px;
+            height: 230px;
+            border-radius: 15px;
+            background: white;
+            margin-top: 15px;
+        }
+
+        .btn {
+            margin-top: 25px;
+            padding: 12px 20px;
+            background: #00ff88;
+            color: black;
             border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .timer {
+            margin-top: 15px;
+            font-size: 17px;
+            color: #00ff88;
         }
     </style>
 </head>
+
 <body>
 
-    <div class="card">
-        <h1>Licença Expirada</h1>
-        <p>Escolha um plano e realize o pagamento para continuar usando o sistema.</p>
+<div class="container">
+    <h2 style="color:#00ff88;">Pagamento via PIX</h2>
+    <p>Escaneie o QR Code para ativar seu plano premium</p>
 
-        <div class="plan" onclick="mostrarQR('mensal')">
-            💸 Plano Mensal — R$ 69,90
-        </div>
+    <div class="circle">
+        <div class="ring"></div>
 
-        <div class="plan" onclick="mostrarQR('trimestral')">
-            💸 Plano Trimestral — R$ 79,90
-        </div>
-
-        <div class="plan" onclick="mostrarQR('anual')">
-            💸 Plano Anual — R$ 149,90
-        </div>
-
-        <div id="qrArea" style="margin-top:20px; display:none;">
-            <h3>Escaneie o QR Code:</h3>
-            <img id="qrImage" src="">
-        </div>
+        <!-- QR CODE (imagem será trocada depois pelo seu QR real) -->
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=230x230&data=EXEMPLO-DE-PIX"
+             class="qr">
     </div>
 
+    <div class="timer" id="timer">Tempo restante: 15:00</div>
+
+    <button class="btn" onclick="copiarPix()">Copiar código PIX</button>
+</div>
 
 <script>
-    function mostrarQR(plano) {
-        let url = "";
+    // ---- TIMER 15 MIN ----
+    let tempo = 15 * 60;
+    const t = document.getElementById("timer");
 
-        if (plano === "mensal") {
-            url = "/static/qr/qr_mensal.png";
-        } else if (plano === "trimestral") {
-            url = "/static/qr/qr_trimestral.png";
-        } else if (plano === "anual") {
-            url = "/static/qr/qr_anual.png";
-        }
+    setInterval(() => {
+        let m = Math.floor(tempo / 60);
+        let s = tempo % 60;
 
-        document.getElementById("qrImage").src = url;
-        document.getElementById("qrArea").style.display = "block";
+        t.innerText = `Tempo restante: ${m}:${s.toString().padStart(2, "0")}`;
+
+        if (tempo <= 0) return;
+        tempo--;
+    }, 1000);
+
+
+    // ---- COPIAR PIX ----
+    function copiarPix() {
+        navigator.clipboard.writeText("SUA-CHAVE-PIX-AQUI");
+        alert("Código PIX copiado!");
     }
+
+    // ---- VERIFICA PAGAMENTO A CADA 5s ----
+    setInterval(async () => {
+        const resp = await fetch("/api/verificar_pagamento");
+        const data = await resp.json();
+
+        if (data.status === "pago") {
+            window.location.href = "/pagamento_confirmado";
+        }
+    }, 5000);
 </script>
 
 </body>
