@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login • Palpites IA</title>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #000000;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        color: #ffffff;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    .container {
+        width: 360px;
+        padding: 35px 30px;
+        background: rgba(15, 15, 15, 0.9);
+        border-radius: 20px;
+        border: 2px solid #00ff88;
+        box-shadow: 0 0 25px #00ff88;
+        text-align: center;
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    /* 🔥 CÍRCULO NEON */
+    .bola-neon {
+        width: 130px;
+        height: 130px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        border: 6px solid rgba(0,255,136,0.2);
+        border-top-color: #00ff88;
+        animation: spin 1.6s linear infinite;
+        box-shadow: 0 0 20px #00ff88;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    h1 {
+        margin: 10px 0 25px 0;
+        font-size: 32px;
+        font-weight: bold;
+        color: #00ff88;
+        text-shadow: 0 0 15px #00ff88;
+        letter-spacing: 2px;
+    }
+
+    .input-group {
+        text-align: left;
+        margin-bottom: 18px;
+    }
+
+    .input-group label {
+        font-size: 14px;
+        color: #cccccc;
+    }
+
+    .input-group input {
+        width: 100%;
+        padding: 14px;
+        border-radius: 10px;
+        border: 2px solid #00ff88;
+        background: #0f0f0f;
+        color: #ffffff;
+        font-size: 15px;
+        outline: none;
+        transition: all 0.3s ease;
+    }
+
+    .input-group input:focus {
+        box-shadow: 0 0 15px #00ff88;
+    }
+
+    .botao {
+        width: 100%;
+        padding: 15px;
+        background: #00ff88;
+        color: #000;
+        border: none;
+        border-radius: 10px;
+        font-size: 17px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 10px;
+        box-shadow: 0 0 15px #00ff88;
+        transition: transform 0.2s ease;
+    }
+
+    .botao:hover {
+        transform: translateY(-3px);
+    }
+
+    .erro {
+        margin-top: 10px;
+        color: #ff5252;
+        font-weight: bold;
+    }
+
+    .link {
+        margin-top: 18px;
+        display: block;
+        font-size: 15px;
+        color: #00ff88;
+        text-decoration: none;
+    }
+
+    .link:hover {
+        text-decoration: underline;
+    }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="bola-neon"></div>
+
+    <h1>PALPITES IA</h1>
+
+    <form method="POST">
+
+        <div class="input-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="Digite seu email" required>
+        </div>
+
+        <div class="input-group">
+            <label>Senha</label>
+            <input type="password" name="senha" placeholder="Digite sua senha" required>
+        </div>
+
+        <button class="botao" type="submit">Entrar</button>
+
+        {% if erro %}
+            <div class="erro">{{ erro }}</div>
+        {% endif %}
+
+        <a class="link" href="/cadastro">Criar conta gratuita</a>
+
+    </form>
+
+</div>
+
+</body>
+</html>
