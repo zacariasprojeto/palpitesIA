@@ -1,37 +1,47 @@
 /* =============================
    ESTILOS GERAIS DO SISTEMA
-   Lanzaca IA – Versão Completa
+   Palpites IA – Versão Completa
    ============================= */
 
+/* CÍRCULO NEON COM RAIO CENTRAL */
 .bola-neon {
-    width: 130px;
-    height: 130px;
-    margin: 0 auto 20px;
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 25px;
     border-radius: 50%;
-    border: 6px solid rgba(0,255,136,0.2);
+    border: 6px solid rgba(0,255,136,0.25);
     border-top-color: #00ff88;
-    animation: spin 1.6s linear infinite;
-    box-shadow: 0 0 20px #00ff88;
+    animation: spin 1.7s linear infinite;
+    box-shadow: 0 0 30px #00ff88;
     position: relative;
 }
 
 @keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
 }
 
-/* Ícone do raio CENTRALIZADO */
+/* RAIO FIXO, CENTRALIZADO, GLOW FORTE */
 .icone-raio {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 55px;
-    height: 55px;
+    width: 58px;
+    height: 58px;
     transform: translate(-50%, -50%);
-    filter: drop-shadow(0 0 12px #00ff88);
+    filter: drop-shadow(0 0 15px #00ff88);
 }
 
+/* RAIO GLOBAL PARA TODAS AS PÁGINAS */
+.icone-raio-global {
+    width: 45px;
+    display: block;
+    margin: 0 auto 20px;
+    filter: drop-shadow(0 0 14px #00ff88);
+}
+
+/* =============================
+   CORES / ROOT
+   ============================= */
 
 :root {
     --verde: #00ff88;
@@ -59,11 +69,13 @@ body {
     background: linear-gradient(135deg, var(--preto-claro), var(--preto));
     color: var(--branco);
     min-height: 100vh;
-    line-height: 1.6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* =============================
-   LOGIN
+   ÁREA DE LOGIN / FORMULÁRIOS
    ============================= */
 
 .tela-login {
@@ -76,88 +88,94 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
-    padding: 20px;
+    padding: 25px;
 }
 
 .login-container {
-    background: rgba(26, 26, 26, 0.95);
-    padding: 30px;
-    border-radius: 20px;
+    background: rgba(26,26,26,0.95);
+    padding: 40px 35px;
+    border-radius: 22px;
     border: 2px solid var(--verde);
     text-align: center;
-    max-width: 400px;
-    width: 100%;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.login-logo {
-    font-size: 3em;
-    margin-bottom: 20px;
+    width: 360px;
+    box-shadow: 0 0 25px #00ff88;
 }
 
 .login-titulo {
     font-size: 2em;
-    margin-bottom: 10px;
-    background: linear-gradient(135deg, var(--verde), var(--azul));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    margin-bottom: 25px;
+    color: var(--verde);
+    text-shadow: 0 0 12px var(--verde);
 }
 
-.login-descricao {
-    color: var(--cinza-claro);
-    margin-bottom: 30px;
-}
-
+/* GRUPO DE INPUT */
 .input-group {
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     text-align: left;
 }
 
+/* LABEL */
 .input-group label {
     display: block;
-    margin-bottom: 8px;
-    color: var(--cinza-claro);
-    font-weight: bold;
+    margin-bottom: 6px;
+    color: var(--branco);
 }
 
+/* INPUT */
 .input-group input {
     width: 100%;
-    padding: 15px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.05);
+    padding: 14px;
+    border: 2px solid var(--verde);
+    background: #0f0f0f;
     color: var(--branco);
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 1em;
-    transition: all 0.3s ease;
+    transition: 0.3s;
 }
 
+/* FOCUS NEON */
 .input-group input:focus {
     outline: none;
+    box-shadow: 0 0 15px var(--verde);
     border-color: var(--verde);
 }
 
+/* BOTÃO */
 .botao-login {
     width: 100%;
     padding: 15px;
     background: var(--verde);
     color: var(--preto);
-    border: none;
-    border-radius: 10px;
-    font-size: 1.1em;
+    font-size: 1.2em;
     font-weight: bold;
+    border-radius: 12px;
+    border: none;
     cursor: pointer;
-    transition: all 0.3s ease;
-    margin-bottom: 15px;
+    margin-top: 10px;
+    transition: 0.25s;
+    box-shadow: 0 0 18px var(--verde);
 }
 
 .botao-login:hover {
+    transform: translateY(-4px);
     background: var(--verde-escuro);
-    transform: translateY(-2px);
+}
+
+/* LINKS */
+.link {
+    margin-top: 20px;
+    display: block;
+    text-decoration: none;
+    color: var(--verde);
+    text-align: center;
+}
+
+.link:hover {
+    text-decoration: underline;
 }
 
 /* =============================
-   TELA DE CARREGAMENTO
+   LOADER
    ============================= */
 
 .tela-carregamento {
@@ -166,223 +184,35 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, var(--preto-claro), var(--preto));
+    background: #000;
     display: none;
-    align-items: center;
     justify-content: center;
-    z-index: 9998;
+    align-items: center;
 }
 
 .carregamento-spinner {
-    width: 60px;
-    height: 60px;
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    border-left: 4px solid var(--verde);
+    width: 70px;
+    height: 70px;
+    border: 6px solid rgba(255,255,255,0.1);
+    border-left-color: var(--verde);
     border-radius: 50%;
     animation: girar 1s linear infinite;
-    margin: 0 auto 20px;
 }
 
 @keyframes girar {
-    0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
 /* =============================
-   LAYOUT PRINCIPAL
+   FORMULÁRIOS GERAIS
    ============================= */
 
-.container-principal {
-    display: none;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-/* HEADER */
-
-.cabecalho {
-    background: rgba(26, 26, 26, 0.95);
-    border-radius: 15px;
-    padding: 20px;
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid rgba(0, 255, 136, 0.2);
-    flex-wrap: wrap;
-}
-
-.logo h1 {
-    font-size: 2.2em;
-    background: linear-gradient(135deg, var(--verde), var(--azul));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 5px;
-}
-
-/* USUÁRIO */
-
-.info-usuario {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-wrap: wrap;
-}
-
-.usuario-nome {
-    color: var(--verde);
-    font-weight: bold;
-}
-
-.botao-logout,
-.botao-admin {
-    padding: 8px 16px;
-    background: transparent;
+.card-form {
+    width: 380px;
+    padding: 40px 35px;
+    background: #0f0f0f;
+    border: 2px solid var(--verde);
     border-radius: 20px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.botao-logout {
-    border: 1px solid var(--laranja);
-    color: var(--laranja);
-}
-
-.botao-logout:hover {
-    background: var(--laranja);
-    color: var(--branco);
-}
-
-.botao-admin {
-    border: 1px solid var(--azul);
-    color: var(--azul);
-}
-
-.botao-admin:hover {
-    background: var(--azul);
-    color: var(--branco);
-}
-
-/* =============================
-   PAINEL DE CONTROLE
-   ============================= */
-
-.painel-controle {
-    background: rgba(26, 26, 26, 0.9);
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 25px;
-}
-
-.filtros-rapidos {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-}
-
-.botao-filtro {
-    padding: 10px 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 25px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--cinza-claro);
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.botao-filtro.ativo {
-    background: var(--verde);
-    color: var(--preto);
-}
-
-.botoes-acao {
-    margin-top: 15px;
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.botao-acao {
-    padding: 12px 24px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.btn-principal {
-    background: var(--verde);
-    color: var(--preto);
-}
-
-.btn-secundario {
-    background: var(--azul);
-    color: var(--branco);
-}
-
-/* =============================
-   CARDS DE APOSTAS
-   ============================= */
-
-.grid-apostas {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 20px;
-}
-
-.cartao-aposta {
-    background: rgba(26, 26, 26, 0.85);
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.1);
-    transition: 0.3s;
-}
-
-.cartao-aposta:hover {
-    transform: translateY(-5px);
-    border-color: var(--verde);
-}
-
-/* =============================
-   BOTÕES DE APOSTAR
-   ============================= */
-
-.botao-casa {
-    padding: 12px;
-    border-radius: 8px;
-    color: white;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: 0.25s;
-    background: rgba(255,255,255,0.1);
-}
-
-.botao-casa:hover {
-    border-color: var(--verde);
-    transform: translateY(-2px);
-}
-
-/* =============================
-   TOAST
-   ============================= */
-
-.toast {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    padding: 15px 20px;
-    background: var(--verde);
-    color: var(--preto);
-    border-radius: 8px;
-    font-weight: bold;
-    opacity: 0;
-    transform: translateY(40px);
-    transition: 0.3s;
-}
-
-.toast.mostrar {
-    opacity: 1;
-    transform: translateY(0);
+    box-shadow: 0 0 25px var(--verde);
+    text-align: center;
 }
