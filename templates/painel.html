@@ -1,321 +1,303 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel • Palpites IA</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palpites iA - Painel Premium</title>
 
-<style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    body {
-        margin: 0;
-        padding: 0;
-        background: #000;
-        font-family: 'Segoe UI', Tahoma, sans-serif;
-        color: white;
-    }
-
-    /* ----------------------------- HEADER ----------------------------- */
-
-    header {
-        width: 100%;
-        padding: 25px 20px;
-        background: rgba(15, 15, 15, 0.9);
-        border-bottom: 2px solid #00ff88;
-        box-shadow: 0 0 20px #00ff88;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .logo {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .bola-neon-mini {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        border: 4px solid rgba(0,255,136,0.2);
-        border-top-color: #00ff88;
-        animation: spin 1.5s linear infinite;
-        box-shadow: 0 0 12px #00ff88;
-    }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-
-    .logo h1 {
-        font-size: 28px;
-        background: linear-gradient(#00ff88, #00d471);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 15px #00ff88;
-        letter-spacing: 2px;
-        margin: 0;
-    }
-
-    .btn-logout {
-        background: transparent;
-        padding: 10px 20px;
-        border: 2px solid #ff5252;
-        color: #ff5252;
-        border-radius: 10px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: 0.3s ease;
-    }
-
-    .btn-logout:hover {
-        background: #ff5252;
-        color: black;
-    }
-
-    /* ----------------------------- STATUS CARDS ----------------------------- */
-
-    .status-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 15px;
-        padding: 25px;
-    }
-
-    .status-card {
-        background: rgba(20, 20, 20, 0.8);
-        padding: 20px;
-        text-align: center;
-        border-radius: 12px;
-        border: 2px solid rgba(255,255,255,0.15);
-        transition: 0.3s ease;
-    }
-
-    .status-card:hover {
-        border-color: #00ff88;
-        transform: translateY(-3px);
-    }
-
-    .status-num {
-        font-size: 32px;
-        font-weight: bold;
-        color: #00ff88;
-    }
-
-    .status-desc {
-        color: #bbb;
-        margin-top: 8px;
-    }
-
-    /* ----------------------------- TOP 3 ----------------------------- */
-
-    .secao-titulo {
-        text-align: center;
-        font-size: 24px;
-        margin-top: 20px;
-        text-shadow: 0 0 12px #00ff88;
-    }
-
-    .top3-box {
-        width: 92%;
-        margin: 20px auto;
-        padding: 25px;
-        border-radius: 15px;
-        background: rgba(20,20,20,0.85);
-        border: 2px solid #00ff88;
-        box-shadow: 0 0 25px #00ff88;
-        position: relative;
-        overflow: hidden;
-    }
-
-    /* BORDA ANIMADA */
-    .top3-box::before {
-        content: "";
-        position: absolute;
-        inset: -2px;
-        border-radius: 15px;
-        background: linear-gradient(90deg, transparent, #00ff88, transparent);
-        animation: bordaMove 2.2s linear infinite;
-    }
-
-    @keyframes bordaMove {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-    }
-
-    .cadeado {
-        width: 60px;
-        opacity: 0.9;
-        margin: 0 auto 15px;
-        display: block;
-    }
-
-    .btn-desbloquear {
-        width: 100%;
-        padding: 15px;
-        background: #00ff88;
-        font-size: 18px;
-        color: #000;
-        border-radius: 10px;
-        cursor: pointer;
-        font-weight: bold;
-        box-shadow: 0 0 20px #00ff88;
-        border: none;
-        transition: 0.3s ease;
-    }
-
-    .btn-desbloquear:hover {
-        transform: translateY(-3px);
-    }
-
-    .top3-info {
-        font-size: 15px;
-        color: #cccccc;
-        text-align: center;
-        margin-bottom: 18px;
-    }
-
-    /* ----------------------------- GRID DE APOSTAS ----------------------------- */
-
-    .apostas-grid {
-        width: 95%;
-        margin: 25px auto;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: 20px;
-    }
-
-    .aposta-card {
-        background: rgba(25,25,25,0.9);
-        border: 2px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 20px;
-        transition: 0.3s ease;
-    }
-
-    .aposta-card:hover {
-        border-color: #00ff88;
-        transform: translateY(-4px);
-    }
-
-    .aposta-titulo {
-        font-size: 20px;
-        margin-bottom: 10px;
-    }
-
-    .aposta-meta {
-        color: #aaa;
-        font-size: 14px;
-        margin-bottom: 12px;
-    }
-
-    .tag {
-        padding: 4px 10px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: bold;
-        background: #00ff88;
-        color: #000;
-    }
-
-    /* ----------------------------- RESPONSIVO ----------------------------- */
-
-    @media (max-width: 480px) {
-        .apostas-grid {
-            grid-template-columns: 1fr;
+    <style>
+        :root {
+            --verde: #00ff88;
+            --verde-escuro: #00cc6a;
+            --azul: #00aaff;
+            --azul-escuro: #0088cc;
+            --laranja: #ff6b6b;
+            --laranja-escuro: #ff5252;
+            --preto: #0a0a0a;
+            --preto-claro: #1a1a1a;
+            --cinza-escuro: #2a2a2a;
+            --branco: #ffffff;
+            --cinza: #666;
+            --cinza-claro: #aaa;
         }
-        .top3-box {
+
+        body {
+            background: linear-gradient(135deg, var(--preto), var(--preto-claro));
+            color: var(--branco);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+        }
+
+        /* CABEÇALHO */
+        .cabecalho {
+            background: rgba(20,20,20,0.9);
             padding: 20px;
+            border-bottom: 1px solid var(--verde);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-    }
 
-</style>
+        .logo h1 {
+            font-size: 2.2em;
+            background: linear-gradient(135deg, var(--verde), var(--azul));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
 
+        .info-usuario {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .botao-admin, .botao-logout {
+            padding: 8px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            border: 1px solid var(--azul);
+            background: transparent;
+            color: var(--azul);
+            transition: .3s;
+        }
+
+        .botao-admin:hover {
+            background: var(--azul);
+            color: var(--preto);
+        }
+
+        .botao-logout {
+            border-color: var(--laranja);
+            color: var(--laranja);
+        }
+
+        .botao-logout:hover {
+            background: var(--laranja);
+            color: var(--preto);
+        }
+
+        /* STATUS */
+        .barra-status {
+            display: flex;
+            justify-content: space-around;
+            padding: 25px 10px;
+            background: rgba(20,20,20,0.7);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .item-status {
+            text-align: center;
+        }
+
+        .valor-status {
+            font-size: 2.4em;
+            font-weight: bold;
+            color: var(--verde);
+        }
+
+        /* PAINEL CONTROLE */
+        .painel-controle {
+            padding: 25px;
+            text-align: center;
+        }
+
+        .botao-filtro {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            margin: 4px;
+            cursor: pointer;
+            background: #222;
+            color: var(--cinza-claro);
+            transition: .3s;
+        }
+
+        .botao-filtro.ativo {
+            background: var(--verde);
+            color: var(--preto);
+        }
+
+        .botao-acao {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 10px 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-principal {
+            background: var(--verde);
+            color: var(--preto);
+        }
+
+        .btn-secundario {
+            background: var(--azul);
+            color: var(--branco);
+        }
+
+        /* TÍTULOS */
+        .titulo-secao {
+            margin: 40px 0 15px;
+            font-size: 1.8em;
+            text-align: center;
+        }
+
+        /* GRID */
+        .grid-apostas {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+            gap: 20px;
+            padding: 0 20px;
+        }
+
+        /* CARD */
+        .cartao-aposta {
+            background: rgba(25,25,25,0.9);
+            padding: 20px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: .3s;
+        }
+
+        .cartao-aposta:hover {
+            border-color: var(--verde);
+            transform: translateY(-4px);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 8px;
+        }
+
+        .badge-top { background: var(--laranja); }
+        .badge-segura { background: var(--azul); }
+        .badge-multi { background: var(--verde); color: var(--preto); }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            background: var(--verde);
+            color: var(--preto);
+            border-radius: 8px;
+            font-weight: bold;
+            opacity: 0;
+            transform: translateY(40px);
+            transition: .3s;
+        }
+
+        .toast.mostrar {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
 </head>
+
 <body>
 
-<!-- ======================== HEADER ======================== -->
-
-<header>
-    <div class="logo">
-        <div class="bola-neon-mini"></div>
-        <h1>PALPITES IA</h1>
-    </div>
-
-    <button class="btn-logout" onclick="window.location.href='/logout'">
-        Sair
-    </button>
-</header>
-
-
-
-<!-- ======================== RESUMO ======================== -->
-
-<div class="status-container">
-    <div class="status-card">
-        <div class="status-num" id="numHoje">35</div>
-        <div class="status-desc">Jogos Hoje</div>
-    </div>
-
-    <div class="status-card">
-        <div class="status-num" id="numInd">12</div>
-        <div class="status-desc">Individuais</div>
-    </div>
-
-    <div class="status-card">
-        <div class="status-num" id="numMult">5</div>
-        <div class="status-desc">Múltiplas</div>
-    </div>
-
-    <div class="status-card">
-        <div class="status-num" id="numSeg">3</div>
-        <div class="status-desc">Seguras</div>
-    </div>
-</div>
-
-
-<!-- ======================== TOP 3 ======================== -->
-
-<h2 class="secao-titulo">🔥 TOP 3 DO DIA</h2>
-
-<div class="top3-box">
-
-    {% if plano == "trial" %}
-
-        <img class="cadeado" src="https://cdn-icons-png.flaticon.com/512/61/61457.png">
-
-        <div class="top3-info">
-            Os 3 palpites mais valiosos do dia estão <b>bloqueados</b>.<br>
-            Assine um plano para liberar!
+    <!-- CABEÇALHO -->
+    <header class="cabecalho">
+        <div class="logo">
+            <h1><i class="fas fa-bolt"></i> Palpites iA</h1>
         </div>
 
-        <button class="btn-desbloquear" onclick="window.location.href='/planos'">
-            🔓 Desbloquear Top 3
+        <div class="info-usuario">
+            <div>👋 Olá, <strong>{{ nome }}</strong></div>
+
+            {% if is_admin %}
+            <button class="botao-admin" onclick="window.location.href='/admin'">
+                <i class="fas fa-cog"></i> Admin
+            </button>
+            {% endif %}
+
+            <button class="botao-logout" onclick="window.location.href='/logout'">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </div>
+    </header>
+
+    <!-- STATUS -->
+    <div class="barra-status">
+        <div class="item-status">
+            <div class="valor-status" id="totalJogos">0</div>
+            Jogos Hoje
+        </div>
+        <div class="item-status">
+            <div class="valor-status" id="apostasIndividuais">0</div>
+            Individuais
+        </div>
+        <div class="item-status">
+            <div class="valor-status" id="apostasMultiplas">0</div>
+            Múltiplas
+        </div>
+        <div class="item-status">
+            <div class="valor-status" id="apostasSeguras">0</div>
+            Seguras
+        </div>
+    </div>
+
+    <!-- PAINEL CONTROLE -->
+    <div class="painel-controle">
+
+        <div>
+            <button class="botao-filtro ativo">Todas</button>
+            <button class="botao-filtro">Individuais</button>
+            <button class="botao-filtro">Múltiplas</button>
+            <button class="botao-filtro">Seguras</button>
+            <button class="botao-filtro">TOP</button>
+        </div>
+
+        <button class="botao-acao btn-principal" id="analisarIA">
+            <i class="fas fa-brain"></i> Analisar com IA
         </button>
 
-    {% else %}
+        <button class="botao-acao btn-secundario" id="atualizar">
+            <i class="fas fa-sync"></i> Atualizar Dados
+        </button>
+    </div>
 
-        <div class="top3-info">✔ Seu plano permite ver os 3 palpites de ouro do dia</div>
+    <!-- TOP 5 -->
+    <h2 class="titulo-secao"><i class="fas fa-crown"></i> TOP 5 DO DIA</h2>
+    <div class="grid-apostas" id="topApostas"></div>
 
-        <div class="apostas-grid" id="top3Palpites">
-            <!-- IA irá preencher -->
-        </div>
+    <!-- SEGURAS -->
+    <h2 class="titulo-secao"><i class="fas fa-shield-alt"></i> APOSTAS SEGURAS</h2>
+    <div class="grid-apostas" id="gridApostasSeguras"></div>
 
-    {% endif %}
+    <!-- MULTIPLAS -->
+    <h2 class="titulo-secao"><i class="fas fa-cubes"></i> APOSTAS MÚLTIPLAS</h2>
+    <div class="grid-apostas" id="gridMultiplas"></div>
 
-</div>
+    <!-- TODAS -->
+    <h2 class="titulo-secao"><i class="fas fa-list"></i> TODAS AS APOSTAS</h2>
+    <div class="grid-apostas" id="gridTodas"></div>
 
+    <div id="toast" class="toast">Analisando com IA...</div>
 
+<script>
+function toast(msg){
+    let t = document.getElementById("toast");
+    t.innerText = msg;
+    t.classList.add("mostrar");
+    setTimeout(()=> t.classList.remove("mostrar"), 2500);
+}
 
-<!-- ======================== TODAS AS APOSTAS ======================== -->
+document.getElementById("analisarIA").onclick = () => {
+    toast("IA analisando novas oportunidades...");
+};
 
-<h2 class="secao-titulo">⭐ Apostas Recomendadas</h2>
-
-<div class="apostas-grid" id="todasApostas">
-    <!-- IA irá preencher -->
-</div>
-
+document.getElementById("atualizar").onclick = () => {
+    toast("Atualizando dados...");
+};
+</script>
 
 </body>
 </html>
