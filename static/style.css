@@ -3,6 +3,36 @@
    Lanzaca IA – Versão Completa
    ============================= */
 
+.bola-neon {
+    width: 130px;
+    height: 130px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    border: 6px solid rgba(0,255,136,0.2);
+    border-top-color: #00ff88;
+    animation: spin 1.6s linear infinite;
+    box-shadow: 0 0 20px #00ff88;
+    position: relative;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Ícone do raio CENTRALIZADO */
+.icone-raio {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 55px;
+    height: 55px;
+    transform: translate(-50%, -50%);
+    filter: drop-shadow(0 0 12px #00ff88);
+}
+
+
 :root {
     --verde: #00ff88;
     --verde-escuro: #00cc6a;
