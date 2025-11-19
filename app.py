@@ -37,7 +37,7 @@ def parse_ts(value):
 
 
 def user_is_active(user: dict):
-    """Valida se usuário está ativo."""
+    """Valida plano do usuário."""
     if not user:
         return False, "not_found"
 
@@ -63,9 +63,8 @@ def user_is_active(user: dict):
 
 
 # ---------------------------------------------------------
-# ROTAS DE PÁGINAS DOS TEMPLATES
+# PÁGINAS
 # ---------------------------------------------------------
-
 @app.route("/")
 def loader_page():
     return render_template("loader.html")
@@ -122,9 +121,6 @@ def api_login():
     email = data.get("email", "").strip()
     password = data.get("password", "").strip()
 
-    if not email or not password:
-        return jsonify({"status": "error", "msg": "Informe email e senha."})
-
     res = (
         supabase.table("users")
         .select("*")
@@ -157,14 +153,27 @@ def api_login():
 @app.route("/api/register", methods=["POST"])
 def api_register():
     data = request.json or {}
-    email = data.get("email").strip()
-    password = data.get("password").strip()
 
-    exist = supabase.table("users").select("email").eq("email", email).execute()
-    if exist.data:
+    nome = data.get("nome", "").strip()
+    cpf = data.get("cpf", "").strip()
+    telefone = data.get("telefone", "").strip()
+    email = data.get("email", "").strip()
+    password = data.get("password", "").strip()
+
+    # Verifica duplicados
+    exists = supabase.table("users").select("email").eq("email", email).execute()
+    if exists.data:
         return jsonify({"status": "error", "msg": "Email já registrado."})
 
+    exists_cpf = supabase.table("users").select("cpf").eq("cpf", cpf).execute()
+    if exists_cpf.data:
+        return jsonify({"status": "error", "msg": "CPF já está em uso."})
+
+    # Salvar no pending_users
     supabase.table("pending_users").insert({
+        "nome": nome,
+        "cpf": cpf,
+        "telefone": telefone,
         "email": email,
         "password": password
     }).execute()
@@ -173,7 +182,7 @@ def api_register():
 
 
 # ---------------------------------------------------------
-# API: LOGOUT
+# LOGOUT
 # ---------------------------------------------------------
 @app.route("/api/logout", methods=["POST"])
 def api_logout():
