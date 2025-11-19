@@ -1,223 +1,204 @@
-import os
-from datetime import datetime, timedelta, timezone
-from flask import Flask, render_template, request, jsonify, session, redirect
-from supabase import create_client, Client
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask_cors import CORS
+from supabase import create_client
+from datetime import datetime, timedelta
 import random
+import string
+import os
+from openai import OpenAI
 
-# =========================================================
-# CONFIGURAÇÃO FLASK / SUPABASE
-# =========================================================
-app = Flask(__name__, template_folder="templates", static_folder="static")
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "chave_teste")
+app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "chavesecreta123")
+CORS(app)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-    raise RuntimeError("SUPABASE_URL ou SUPABASE_SERVICE_KEY não configurados!")
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+OPENAI_API_KEY = os.getenv("OPENAI_KEY")
+client = OpenAI(api_key=OPENAI_API_KEY)
 
-# =========================================================
-# FUNÇÕES AUXILIARES
-# =========================================================
 
-def parse_ts(value):
-    if not value:
-        return None
+# ----------------------------
+# GERADOR DE CÓDIGO
+# ----------------------------
+def gerar_codigo():
+    return ''.join(random.choice(string.digits) for _ in range(6))
+
+
+# ----------------------------
+# ENVIAR EMAIL DE CONFIRMAÇÃO
+# ----------------------------
+def enviar_email_confirmacao(email, codigo):
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except:
-        return None
+        client.emails.send(
+            to=email,
+            subject="Código de confirmação",
+            html=f"<h2>Seu código é: {codigo}</h2>"
+        )
+        return True
+    except Exception as e:
+        print("Erro ao enviar email:", e)
+        return False
 
 
-def user_is_active(usuario):
-    """Valida se o usuário tem acesso liberado."""
-    if not usuario:
-        return False, "not_found"
-
-    if usuario.get("confirmado") is False:
-        return False, "not_confirmed"
-
-    if usuario["plano"] == "trial":
-        expira = parse_ts(usuario["expira_em"])
-        if not expira or expira < datetime.now(timezone.utc):
-            return False, "trial_expired"
-        return True, None
-
-    if usuario["plano"] == "pago":
-        expira = parse_ts(usuario["expira_em"])
-        if not expira or expira < datetime.now(timezone.utc):
-            return False, "paid_expired"
-        return True, None
-
-    return False, "unknown_plan"
-
-
-def enviar_codigo(email, codigo):
-    """Simulando envio de email (Render bloqueia SMTP)."""
-    print(f"=== Código enviado para {email}: {codigo} ===")
-
-
-# =========================================================
-# ROTAS DE PÁGINAS
-# =========================================================
-
-@app.route("/")
-def loader_page():
-    return render_template("loader.html")
-
-
-@app.route("/login")
-def login_page():
-    return render_template("login.html")
-
-
+# ----------------------------
+# VERIFICA SE O USUÁRIO ESTÁ LOGADO
+# ----------------------------
+def login_obrigatorio():
+    if "usuario_id" not in session:
+        return False
+    return True
+# -------------------------------------
+# ROTA: TELA DE CADASTRO
+# -------------------------------------
 @app.route("/cadastro")
-def cadastro_page():
+def cadastro():
     return render_template("cadastro.html")
 
 
-@app.route("/confirmar")
-def confirmar_page():
-    email = request.args.get("email")
-    return render_template("confirmar.html", email=email)
-
-
-@app.route("/dashboard")
-def dashboard_page():
-    if "user_email" not in session:
-        return redirect("/login")
-    return render_template("painel.html", nome=session.get("user_nome"))
-
-
-@app.route("/top3")
-def top3_page():
-    if "user_email" not in session:
-        return redirect("/login")
-    return render_template("top3.html")
-
-
-# =========================================================
-# API: CADASTRO
-# =========================================================
-
+# -------------------------------------
+# API: REGISTRO DE USUÁRIO
+# -------------------------------------
 @app.route("/api/register", methods=["POST"])
 def api_register():
-    data = request.json or {}
-
-    nome = data.get("nome", "").strip()
-    email = data.get("email", "").strip().lower()
-    senha = data.get("senha", "").strip()
-    cpf = data.get("cpf", "").strip()
-    celular = data.get("celular", "").strip()
+    data = request.json
+    nome = data.get("nome")
+    email = data.get("email")
+    senha = data.get("senha")
+    celular = data.get("celular")
+    cpf = data.get("cpf")
     ip = request.remote_addr
 
-    # Remover caracteres do celular
-    celular = "".join([c for c in celular if c.isdigit()])
+    # CPF COM PONTOS E TRAÇO → remove formatação
+    cpf = cpf.replace(".", "").replace("-", "")
 
-    # VERIFICA SE JÁ EXISTE EMAIL / CPF / CELULAR / IP
-    checks = supabase.table("usuarios").select("*").or_(
-        f"email.eq.{email},cpf.eq.{cpf},celular.eq.{celular},ip.eq.{ip}"
-    ).execute()
+    # Verificar email existente
+    if supabase.table("usuarios").select("*").eq("email", email).execute().data:
+        return jsonify({"error": "Email já registrado"}), 400
 
-    if checks.data:
-        return jsonify({"status": "error", "msg": "Você já possui cadastro ou já usou o período de teste."})
+    # Verificar CPF existente
+    if supabase.table("usuarios").select("*").eq("cpf", cpf).execute().data:
+        return jsonify({"error": "CPF já registrado"}), 400
 
-    # Gera código de confirmação
-    codigo = str(random.randint(100000, 999999))
+    codigo = gerar_codigo()
+    expira = datetime.utcnow() + timedelta(minutes=15)
 
+    # Inserir no Supabase
     supabase.table("usuarios").insert({
         "nome": nome,
         "email": email,
         "senha": senha,
-        "cpf": cpf,
         "celular": celular,
+        "cpf": cpf,
         "ip": ip,
-        "codigo_confirmacao": codigo,
-        "confirmado": False,
         "plano": "trial",
-        "expira_em": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        "codigo_confirmacao": codigo,
+        "expira_em": expira
     }).execute()
 
-    enviar_codigo(email, codigo)
+    enviar_email_confirmacao(email, codigo)
 
-    return jsonify({"status": "ok", "redirect": f"/confirmar?email={email}"})
+    return jsonify({"success": True})
 
 
-# =========================================================
-# API: CONFIRMAR CÓDIGO
-# =========================================================
+# -------------------------------------
+# ROTA: CONFIRMAR CÓDIGO
+# -------------------------------------
+@app.route("/confirmar")
+def confirmar():
+    return render_template("confirmar.html")
 
+
+# -------------------------------------
+# API: VALIDAR CÓDIGO
+# -------------------------------------
 @app.route("/api/confirmar", methods=["POST"])
 def api_confirmar():
-    data = request.json or {}
-
+    data = request.json
     email = data.get("email")
     codigo = data.get("codigo")
 
-    res = supabase.table("usuarios").select("*").eq("email", email).execute()
+    resp = supabase.table("usuarios").select("*").eq("email", email).execute()
 
-    if not res.data:
-        return jsonify({"status": "error", "msg": "Usuário não encontrado."})
+    if not resp.data:
+        return jsonify({"error": "Usuário não encontrado"}), 400
 
-    usuario = res.data[0]
+    user = resp.data[0]
 
-    if usuario["codigo_confirmacao"] != codigo:
-        return jsonify({"status": "error", "msg": "Código incorreto."})
+    if user["codigo_confirmacao"] != codigo:
+        return jsonify({"error": "Código incorreto"}), 400
 
-    supabase.table("usuarios").update({"confirmado": True}).eq("email", email).execute()
+    if datetime.utcnow() > datetime.fromisoformat(user["expira_em"].replace("Z", "")):
+        return jsonify({"error": "Código expirado"}), 400
 
-    return jsonify({"status": "ok", "redirect": "/login"})
+    supabase.table("usuarios").update({
+        "codigo_confirmacao": None
+    }).eq("email", email).execute()
 
-
-# =========================================================
-# API: LOGIN
-# =========================================================
-
+    return jsonify({"success": True})
+# -------------------------------------
+# LOGIN
+# -------------------------------------
 @app.route("/api/login", methods=["POST"])
 def api_login():
-    data = request.json or {}
+    data = request.json
+    email = data.get("email")
+    senha = data.get("senha")
 
-    email = data.get("email", "").strip().lower()
-    senha = data.get("senha", "").strip()
+    resp = supabase.table("usuarios").select("*").eq("email", email).eq("senha", senha).execute()
 
-    res = supabase.table("usuarios").select("*").eq("email", email).eq("senha", senha).execute()
+    if not resp.data:
+        return jsonify({"error": "Login inválido"}), 400
 
-    if not res.data:
-        return jsonify({"status": "error", "msg": "Credenciais incorretas."})
+    user = resp.data[0]
+    session["usuario_id"] = user["id"]
+    session["nome"] = user["nome"]
+    session["is_admin"] = user["is_admin"]
 
-    usuario = res.data[0]
-
-    ativo, motivo = user_is_active(usuario)
-
-    if not ativo:
-        return jsonify({
-            "status": "blocked",
-            "reason": motivo,
-            "msg": "Seu acesso está bloqueado. Faça o pagamento para continuar."
-        })
-
-    # Login OK
-    session["user_email"] = usuario["email"]
-    session["user_nome"] = usuario["nome"]
-
-    return jsonify({"status": "ok", "redirect": "/dashboard"})
+    return jsonify({"success": True})
 
 
-# =========================================================
-# API: LOGOUT
-# =========================================================
+# -------------------------------------
+# PAINEL PRINCIPAL
+# -------------------------------------
+@app.route("/painel")
+def painel():
+    if not login_obrigatorio():
+        return redirect("/")
 
-@app.route("/api/logout", methods=["POST"])
-def api_logout():
+    return render_template("painel.html", nome=session["nome"], is_admin=session["is_admin"])
+
+
+# -------------------------------------
+# ADMIN
+# -------------------------------------
+@app.route("/admin")
+def admin():
+    if not login_obrigatorio() or not session["is_admin"]:
+        return redirect("/painel")
+
+    usuarios = supabase.table("usuarios").select("*").execute().data
+    return render_template("admin.html", usuarios=usuarios)
+
+
+# -------------------------------------
+# LOGOUT
+# -------------------------------------
+@app.route("/logout")
+def logout():
     session.clear()
-    return jsonify({"status": "ok", "redirect": "/login"})
+    return redirect("/")
 
 
-# =========================================================
-# MAIN
-# =========================================================
+# -------------------------------------
+# HOME
+# -------------------------------------
+@app.route("/")
+def home():
+    return render_template("login.html")
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
