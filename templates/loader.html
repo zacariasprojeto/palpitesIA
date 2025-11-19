@@ -1,75 +1,23 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carregando • Palpites IA</title>
-
-<style>
-    body {
-        background: #000;
-        color: #00ff88;
-        margin: 0;
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-family: Arial, sans-serif;
-        overflow: hidden;
-    }
-
-    .container {
-        text-align: center;
-        position: relative;
-    }
-
-    /* 🔥 CÍRCULO COM BORDA NEON */
-    .loader {
-        width: 140px;
-        height: 140px;
-        border-radius: 50%;
-        border: 6px solid rgba(0,255,136,0.15);
-        border-top-color: #00ff88;
-        animation: spin 1.5s linear infinite;
-        margin: 0 auto 20px;
-        box-shadow: 0 0 25px #00ff88;
-    }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-
-    .titulo {
-        font-size: 35px;
-        font-weight: bold;
-        letter-spacing: 2px;
-        color: #00ff88;
-        text-shadow: 0 0 15px #00ff88;
-    }
-
-    .sub {
-        color: #ccc;
-        margin-top: 10px;
-        font-size: 16px;
-    }
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carregando • Palpites IA</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<div class="container">
-    <div class="loader"></div>
+<div class="tela-carregamento">
 
-    <div class="titulo">PALPITES IA</div>
-    <div class="sub">Carregando sistema premium...</div>
+    <div class="bola-neon">
+        <img src="/static/img/raio.svg" class="icone-raio">
+    </div>
+
+    <h1 class="login-titulo">Palpites IA</h1>
+    <p style="text-align:center;color:#00ff88;">Carregando sistema premium...</p>
+
 </div>
-
-<script>
-    // Redireciona automaticamente depois de 2s
-    setTimeout(() => {
-        window.location.href = "/login";
-    }, 2000);
-</script>
 
 </body>
 </html>
