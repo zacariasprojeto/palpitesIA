@@ -1,47 +1,128 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login • Palpites IA</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Palpites iA</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        :root {
+            --verde: #00ff88;
+            --verde-escuro: #00cc6a;
+            --preto: #0a0a0a;
+            --preto-claro: #151515;
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(circle at center, #000 0%, #040404 100%);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            color: white;
+        }
+
+        .container {
+            max-width: 420px;
+            margin: 90px auto;
+            background: rgba(10, 10, 10, 0.92);
+            padding: 38px;
+            border-radius: 14px;
+            text-align: center;
+            border: 1px solid rgba(0, 255, 140, 0.25);
+            box-shadow: 0 0 20px rgba(0, 255, 140, 0.22);
+        }
+
+        .logo {
+            font-size: 2em;
+            color: var(--verde);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            color: var(--verde);
+            margin-bottom: 25px;
+        }
+
+        input {
+            width: 90%;
+            padding: 14px;
+            margin: 12px 0;
+            border-radius: 8px;
+            border: 1px solid #222;
+            background: #111;
+            color: white;
+            font-size: 1em;
+            outline: none;
+            transition: .2s;
+        }
+
+        input:focus {
+            border-color: var(--verde);
+            box-shadow: 0 0 8px var(--verde);
+        }
+
+        button {
+            width: 94%;
+            padding: 14px;
+            margin-top: 20px;
+            background: var(--verde);
+            color: black;
+            font-weight: bold;
+            font-size: 1.1em;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        button:hover {
+            background: var(--verde-escuro);
+            box-shadow: 0 0 12px var(--verde);
+        }
+
+        a {
+            color: var(--verde);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .subtexto {
+            margin-top: 18px;
+            font-size: 0.9em;
+            color: #ccc;
+        }
+    </style>
 </head>
+
 <body>
 
-<div class="tela-login">
+    <div class="container">
 
-    <div class="login-container">
-
-        <!-- RAIO GLOBAL -->
-        <div class="icone-raio-global">
-            <svg width="45" height="45" viewBox="0 0 24 24" fill="#00ff88">
-                <path d="M13 2L3 14H11L9 22L19 10H11L13 2Z"/>
-            </svg>
+        <div class="logo">
+            <i class="fas fa-bolt"></i> Palpites iA
         </div>
 
-        <h1 class="login-titulo">Palpites IA</h1>
+        <h2>Entrar no Sistema</h2>
 
-        <form method="POST" action="/login">
-            
-            <div class="input-group">
-                <label>E-mail</label>
-                <input type="email" name="email" placeholder="Digite seu e-mail" required>
-            </div>
+        <form action="/login" method="POST">
 
-            <div class="input-group">
-                <label>Senha</label>
-                <input type="password" name="senha" placeholder="Digite sua senha" required>
-            </div>
+            <input type="email" name="email" placeholder="Email" required />
 
-            <button class="botao-login" type="submit">Entrar no Sistema</button>
+            <input type="password" name="senha" placeholder="Senha" required />
 
+            <button type="submit">➜ Entrar no Sistema</button>
         </form>
 
-        <a class="link" href="/cadastro">Não tem conta? Cadastre-se</a>
+        <p class="subtexto">Não tem conta?
+            <a href="/cadastro">Cadastrar</a>
+        </p>
 
     </div>
-
-</div>
 
 </body>
 </html>
